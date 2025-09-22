@@ -5,8 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard em Tempo Real</title>
     <style>
-        /* ... (seu CSS existente) ... */
-        /* NOVO - Estilos para os botões dos gráficos */
+        /* Estilos gerais */
+        body { font-family: sans-serif; background-color: #f4f4f9; color: #333; padding: 2em; }
+        .container { background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
+        h1, h2 { color: #0056b3; text-align: center; }
+        
+        /* Estilos da tabela */
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5em; }
+        th, td { padding: 0.8em; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #007bff; color: white; position: sticky; top: 0; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        @keyframes fadeIn { from { opacity: 0; background-color: #ffff99; } to { opacity: 1; background-color: initial; } }
+        .nova-linha { animation: fadeIn 1s ease-in-out; }
+
+        /* Estilos para os links e botões */
+        a { display: inline-block; margin-top: 1.5em; color: #007bff; text-decoration: none; }
         .botoes-graficos { text-align: center; margin-bottom: 1.5em; }
         .botoes-graficos a {
             background-color: #6c757d; color: white;
@@ -29,14 +42,56 @@
         </div>
 
         <table>
-            </table>
+            <thead>
+                <tr>
+                    <th>Horário da Medição</th>
+                    <th>Umidade do Solo (%)</th>
+                    <th>Temp. do Solo (°C)</th>
+                    <th>Chuva (mm)</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-dados">
+                {% for leitura in leituras %}
+                <tr>
+                    <td>{{ leitura.Horario }}</td>
+                    <td>{{ leitura.Umidade }}</td>
+                    <td>{{ leitura.Temperatura }}</td>
+                    <td>{{ leitura.Chuva }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         
         <a href="/">Voltar para a tela de acesso</a>
     </div>
 
     <script>
-        // ... (seu script existente para atualizar a tabela a cada 2 segundos) ...
+        async function buscarNovaLeitura() {
+            try {
+                const response = await fetch('/api/dados_atuais');
+                const novaLeitura = await response.json();
+                const tbody = document.getElementById('tabela-dados');
+                const newRow = document.createElement('tr');
+                newRow.classList.add('nova-linha');
+                newRow.innerHTML = `
+                    <td>${novaLeitura.Horario}</td>
+                    <td>${novaLeitura.Umidade}</td>
+                    <td>${novaLeitura.Temperatura}</td>
+                    <td>${novaLeitura.Chuva}</td>
+                `;
+                tbody.appendChild(newRow);
+                if (tbody.rows.length > 15) {
+                    tbody.deleteRow(0);
+                }
+            } catch (error) {
+                console.error('Erro ao buscar novos dados:', error);
+            }
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            setInterval(buscarNovaLeitura, 2000);
+        });
     </script>
 </body>
 </html>
+
 
