@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # ===================================================================================
-#   SIMULADOR WEB (VERSÃO 9.0 - DASHBOARD COM GRÁFICOS INDIVIDUAIS)
+#   SIMULADOR WEB (VERSÃO 9.5 - PÁGINAS SEPARADAS E DINÂMICAS)
 #
-#   - Dashboard principal continua com atualização em tempo real.
-#   - Adiciona uma rota dinâmica (/grafico/<tipo_sensor>) para exibir gráficos individuais.
+#   - Dashboard principal com tabela em tempo real.
+#   - Páginas de gráfico individuais que TAMBÉM se atualizam em tempo real.
 # ===================================================================================
 
 import random
@@ -13,87 +13,72 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-# --- FUNÇÕES DE GERAÇÃO DE DADOS (sem alterações) ---
+# --- FUNÇÕES DE GERAÇÃO DE DADOS ---
 
-def gerar_dados_iniciais(device_id):
-    dados_gerados = []
+def gerar_dados_historicos(pontos=50):
+    """Gera uma lista de dados históricos para popular os gráficos inicialmente."""
+    dados = []
     hora_atual = datetime.now()
-    for i in range(10):
-        timestamp = hora_atual - timedelta(minutes=(9-i)*2)
+    for i in range(pontos):
+        timestamp = hora_atual - timedelta(minutes=(pontos - 1 - i) * 2)
         leitura = {
-            "Horario": timestamp.strftime('%d/%m/%Y %H:%M:%S'),
-            "Umidade": round(random.uniform(34.0, 36.0), 2),
-            "Temperatura": round(random.uniform(20.0, 22.0), 2),
-            "Chuva": round(random.uniform(0.0, 0.2), 2) if random.random() > 0.9 else 0.0
+            "timestamp_completo": timestamp.strftime('%d/%m/%Y %H:%M:%S'),
+            "timestamp_grafico": timestamp.strftime('%H:%M:%S'),
+            "umidade": round(random.uniform(30.0, 40.0), 2),
+            "temperatura": round(random.uniform(20.0, 28.0), 2),
+            "chuva": round(random.uniform(0.0, 2.0), 2) if random.random() > 0.85 else 0.0
         }
-        dados_gerados.append(leitura)
-    return dados_gerados
+        dados.append(leitura)
+    return dados
 
 def gerar_nova_leitura():
+    """Gera apenas UMA nova leitura de dados para a atualização em tempo real."""
     timestamp = datetime.now()
-    leitura = {
-        "Horario": timestamp.strftime('%d/%m/%Y %H:%M:%S'),
-        "Umidade": round(random.uniform(34.0, 36.0), 2),
-        "Temperatura": round(random.uniform(20.0, 22.0), 2),
-        "Chuva": round(random.uniform(0.0, 1.5), 2) if random.random() > 0.95 else 0.0
+    return {
+        "timestamp_completo": timestamp.strftime('%d/%m/%Y %H:%M:%S'),
+        "timestamp_grafico": timestamp.strftime('%H:%M:%S'),
+        "umidade": round(random.uniform(30.0, 40.0), 2),
+        "temperatura": round(random.uniform(20.0, 28.0), 2),
+        "chuva": round(random.uniform(0.0, 2.0), 2) if random.random() > 0.95 else 0.0
     }
-    return leitura
 
-def gerar_dados_historicos():
-    dados_grafico = []
-    hora_atual = datetime.now()
-    for i in range(50):
-        timestamp = hora_atual - timedelta(minutes=(49-i)*15)
-        leitura = {
-            "timestamp": timestamp.strftime('%H:%M'),
-            "umidade": round(random.uniform(25.0, 45.0), 2),
-            "temperatura": round(random.uniform(18.0, 30.0), 2),
-            "chuva": round(random.uniform(0.0, 5.0), 2) if random.random() > 0.8 else 0.0
-        }
-        dados_grafico.append(leitura)
-    return dados_grafico
-
-# --- ROTAS DA NOSSA APLICAÇÃO ---
+# --- ROTAS DA APLICAÇÃO ---
 
 @app.route('/')
 def pagina_de_acesso():
+    """Renderiza a página inicial com o formulário de login."""
     return render_template('index.html')
 
 @app.route('/dados', methods=['POST'])
 def mostrar_dados():
+    """Renderiza a página do dashboard com a tabela."""
     device_id = request.form['device_id']
-    dados_iniciais = gerar_dados_iniciais(device_id)
-    return render_template('dados.html', leituras=dados_iniciais, device_id=device_id)
+    # A tabela inicial não precisa de dados, pois o JS irá populá-la
+    return render_template('dados.html', device_id=device_id)
 
-@app.route('/api/dados_atuais')
-def api_dados_atuais():
-    return jsonify(gerar_nova_leitura())
-
-@app.route('/api/dados_historicos')
-def api_dados_historicos():
-    return jsonify(gerar_dados_historicos())
-
-# =======================================================================
-# NOVO - ROTA DINÂMICA PARA GRÁFICOS INDIVIDUAIS
-# =======================================================================
 @app.route('/grafico/<tipo_sensor>')
 def pagina_grafico_individual(tipo_sensor):
-    """
-    Renderiza a página de gráfico para um sensor específico.
-    A variável <tipo_sensor> vem da URL (ex: /grafico/umidade).
-    """
-    # Define as propriedades de cada gráfico
+    """Renderiza a página de gráfico para um sensor específico."""
     info_sensores = {
-        'umidade': {'titulo': 'Análise Gráfica de Umidade do Solo (%)', 'cor': 'rgba(54, 162, 235, 1)'},
-        'temperatura': {'titulo': 'Análise Gráfica de Temperatura do Solo (°C)', 'cor': 'rgba(255, 99, 132, 1)'},
-        'chuva': {'titulo': 'Análise Gráfica de Precipitação (mm)', 'cor': 'rgba(75, 192, 192, 1)'}
+        'umidade': {'titulo': 'Umidade do Solo (%)', 'cor': 'rgba(54, 162, 235, 1)'},
+        'temperatura': {'titulo': 'Temperatura do Solo (°C)', 'cor': 'rgba(255, 99, 132, 1)'},
+        'chuva': {'titulo': 'Precipitação (mm)', 'cor': 'rgba(75, 192, 192, 1)'}
     }
-
-    # Pega as informações do sensor solicitado. Retorna um 404 se o sensor não existir.
     info = info_sensores.get(tipo_sensor)
     if not info:
         return "Sensor não encontrado", 404
-
-    # Renderiza o template, passando o tipo do sensor e suas informações (título e cor)
     return render_template('grafico_individual.html', tipo_sensor=tipo_sensor, info=info)
+
+# --- ROTAS DE API ---
+
+@app.route('/api/dados_historicos')
+def api_dados_historicos():
+    """API que fornece a carga inicial de dados."""
+    return jsonify(gerar_dados_historicos(pontos=30))
+
+@app.route('/api/dados_atuais')
+def api_dados_atuais():
+    """API que fornece uma única leitura atualizada para o loop em tempo real."""
+    return jsonify(gerar_nova_leitura())
+
 
