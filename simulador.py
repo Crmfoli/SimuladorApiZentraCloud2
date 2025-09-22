@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # ===================================================================================
-#   SIMULADOR WEB (VERSÃO 12.1 - CORREÇÃO DE PERMISSÃO DE DISCO)
+#   SIMULADOR WEB (VERSÃO 12.2 - CORREÇÃO DE RACE CONDITION DO DISCO)
 #
-#   - Remove a tentativa de criar o diretório '/data', que já é fornecido pelo Render.
+#   - Adota a estratégia de "Lazy Initialization" para criar o arquivo de dados.
+#   - O arquivo só é criado na primeira vez que os dados são lidos, evitando erros de timing.
 # ===================================================================================
 
 import os
@@ -16,41 +17,46 @@ from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO ---
+# --- CONFIGURAÇÃO (sem alterações) ---
 TZ_BRASILIA = ZoneInfo("America/Sao_Paulo")
 DATA_DIR = "/data"
 DATA_FILE = os.path.join(DATA_DIR, "dados_sensores.csv")
 
 # --- FUNÇÕES DE MANIPULAÇÃO DE DADOS ---
 
-def setup_initial_data():
-    """Cria o arquivo CSV com dados históricos se ele não existir."""
-    if not os.path.exists(DATA_FILE):
-        print(f"Arquivo de dados não encontrado. Criando novo em {DATA_FILE}...")
-        
-        # A LINHA ABAIXO FOI REMOVIDA
-        # os.makedirs(DATA_DIR, exist_ok=True) 
-        
-        hora_inicial = datetime.now(TZ_BRASILIA) - pd.DateOffset(months=3)
-        timestamps = pd.to_datetime(pd.date_range(start=hora_inicial, end=datetime.now(TZ_BRASILIA), freq="1H"))
-        
-        dados = []
-        for ts in timestamps:
-            dados.append({
-                "timestamp": ts,
-                "umidade": round(random.uniform(20.0, 50.0), 2),
-                "temperatura": round(random.uniform(15.0, 35.0), 2),
-                "chuva": round(random.uniform(0.0, 5.0), 2) if random.random() > 0.8 else 0.0
-            })
-        
-        df = pd.DataFrame(dados)
-        df.to_csv(DATA_FILE, index=False)
-        print("Arquivo de dados criado com sucesso.")
+def create_initial_data_file():
+    """Cria o arquivo CSV com dados históricos. Esta função só é chamada se o arquivo não existir."""
+    print(f"Arquivo de dados não encontrado. Criando novo em {DATA_FILE}...")
+    
+    hora_inicial = datetime.now(TZ_BRASILIA) - pd.DateOffset(months=3)
+    timestamps = pd.to_datetime(pd.date_range(start=hora_inicial, end=datetime.now(TZ_BRASILIA), freq="1H"))
+    
+    dados = []
+    for ts in timestamps:
+        dados.append({
+            "timestamp": ts,
+            "umidade": round(random.uniform(20.0, 50.0), 2),
+            "temperatura": round(random.uniform(15.0, 35.0), 2),
+            "chuva": round(random.uniform(0.0, 5.0), 2) if random.random() > 0.8 else 0.0
+        })
+    
+    df = pd.DataFrame(dados)
+    df.to_csv(DATA_FILE, index=False)
+    print("Arquivo de dados criado com sucesso.")
 
+# =======================================================================
+# ALTERAÇÃO CRÍTICA AQUI
+# =======================================================================
 def ler_dados_do_csv():
-    """Lê o arquivo CSV e retorna um DataFrame do Pandas."""
+    """Lê o arquivo CSV. Se o arquivo não existir, chama a função para criá-lo primeiro."""
+    # Esta verificação agora acontece aqui, sob demanda.
     if not os.path.exists(DATA_FILE):
+        create_initial_data_file()
+
+    if not os.path.exists(DATA_FILE):
+        # Se mesmo após a tentativa de criação o arquivo não existir, retorna um DataFrame vazio.
         return pd.DataFrame()
+        
     return pd.read_csv(DATA_FILE, parse_dates=['timestamp'])
 
 def salvar_nova_leitura(leitura):
@@ -121,8 +127,11 @@ def api_meses_disponiveis():
     meses.reverse()
     return jsonify(meses)
 
-# --- INICIALIZAÇÃO ---
-setup_initial_data()
+# =======================================================================
+# REMOVIDO: A chamada de inicialização não acontece mais aqui no final.
+# =======================================================================
+# setup_initial_data()
+
 
 
 
