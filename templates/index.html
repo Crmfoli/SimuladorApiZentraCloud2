@@ -18,17 +18,15 @@
 <body>
     <div class="container">
         <h1>Simulador de Acesso à API Zentra Cloud</h1>
-        <form action="/dados" method="post">
+        
+        <form action="/dashboard" method="post">
             <label for="username">E-mail de Acesso:</label>
             <input type="email" id="username" name="username" required>
-
             <label for="api_token">API Token:</label>
             <input type="password" id="api_token" name="api_token" required>
-
             <label for="device_id">ID do Dispositivo:</label>
-            <input type="text" id="device_id" name="device_id" required>
-
-            <button type="submit">Acessar Dados</button>
+            <input type="text" id="device_id" name="device_id" value="SN-A7B4" required>
+            <button type="submit">Acessar Dashboard</button>
         </form>
     </div>
 </body>
