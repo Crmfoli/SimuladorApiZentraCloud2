@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dados do Dispositivo</title>
+    <title>Dashboard em Tempo Real</title>
     <style>
         body { font-family: sans-serif; background-color: #f4f4f9; color: #333; padding: 2em; }
         .container { background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
         h1, h2 { color: #0056b3; text-align: center; }
         table { width: 100%; border-collapse: collapse; margin-top: 1.5em; }
         th, td { padding: 0.8em; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #007bff; color: white; }
+        th { background-color: #007bff; color: white; position: sticky; top: 0; }
         tr:nth-child(even) { background-color: #f2f2f2; }
+        /* Animação para a nova linha */
+        @keyframes fadeIn { from { opacity: 0; background-color: #ffff99; } to { opacity: 1; background-color: initial; } }
+        .nova-linha { animation: fadeIn 1s ease-in-out; }
         a { display: inline-block; margin-top: 1.5em; color: #007bff; text-decoration: none; }
-        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Dados Recebidos da "API"</h1>
+        <h1>Dashboard em Tempo Real</h1>
         <h2>Dispositivo: {{ device_id }}</h2>
 
         <table>
@@ -30,7 +32,7 @@
                     <th>Chuva (mm)</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="tabela-dados">
                 {% for leitura in leituras %}
                 <tr>
                     <td>{{ leitura.Horario }}</td>
@@ -44,5 +46,48 @@
         
         <a href="/">Voltar para a tela de acesso</a>
     </div>
-</body>
+
+    <script>
+        // Esta função será executada a cada 2 segundos para buscar novos dados.
+        async function buscarNovaLeitura() {
+            try {
+                // 1. Chama nossa nova API em segundo plano
+                const response = await fetch('/api/dados_atuais');
+                const novaLeitura = await response.json();
+
+                // 2. Encontra o corpo da tabela no HTML
+                const tbody = document.getElementById('tabela-dados');
+
+                // 3. Cria uma nova linha (<tr>) e as células (<td>)
+                const newRow = document.createElement('tr');
+                newRow.classList.add('nova-linha'); // Adiciona classe para animação
+
+                newRow.innerHTML = `
+                    <td>${novaLeitura.Horario}</td>
+                    <td>${novaLeitura.Umidade}</td>
+                    <td>${novaLeitura.Temperatura}</td>
+                    <td>${novaLeitura.Chuva}</td>
+                `;
+
+                // 4. Adiciona a nova linha no final da tabela
+                tbody.appendChild(newRow);
+
+                // 5. Para a tabela não ficar infinita, remove a linha mais antiga (a primeira)
+                //    se já tivermos mais de 15 linhas.
+                if (tbody.rows.length > 15) {
+                    tbody.deleteRow(0);
+                }
+
+            } catch (error) {
+                console.error('Erro ao buscar novos dados:', error);
+            }
+        }
+
+        // Quando a página terminar de carregar, começa a chamar a função 'buscarNovaLeitura'
+        // a cada 2000 milissegundos (2 segundos).
+        window.addEventListener('DOMContentLoaded', () => {
+            setInterval(buscarNovaLeitura, 2000);
+        });
+    </script>
+    </body>
 </html>
