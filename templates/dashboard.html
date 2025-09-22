@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard com Histórico</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; color: #333; }
+        .header { background: #fff; padding: 1em 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { color: #0056b3; margin: 0; font-size: 1.5em; }
+        .filtro-mes { font-size: 1em; padding: 0.5em; border-radius: 5px; border: 1px solid #ccc; }
+        .main-container { display: flex; flex-wrap: wrap; padding: 1em; }
+        .chart-grid { flex: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 1em; min-width: 600px; }
+        .data-table-container { flex: 2; min-width: 400px; padding-left: 1em; }
+        .card { background: #fff; padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 0.5em; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+        th, td { padding: 0.7em; text-align: left; border-bottom: 1px solid #ddd; font-size: 0.9em; }
+        th { background-color: #007bff; color: white; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Dashboard Zentra Cloud</h1>
+        <div>
+            <label for="month-selector">Ver dados de:</label>
+            <select id="month-selector" class="filtro-mes"></select>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="chart-grid">
+            <div class="card"><h2>Umidade do Solo (%)</h2><canvas id="umidadeChart"></canvas></div>
+            <div class="card"><h2>Temperatura do Solo (°C)</h2><canvas id="temperaturaChart"></canvas></div>
+            <div class="card" style="grid-column: 1 / -1;"><h2>Precipitação (mm)</h2><canvas id="chuvaChart"></canvas></div>
+        </div>
+        <div class="data-table-container">
+            <div class="card"><h2>Últimas Leituras</h2><table id="real-time-table"><thead><tr><th>Horário</th><th>Umidade</th><th>Temp.</th><th>Chuva</th></tr></thead><tbody id="tabela-dados"></tbody></table></div>
+        </div>
+    </div>
+
+    <script>
+        let umidadeChart, temperaturaChart, chuvaChart;
+        let updateInterval; // Variável para controlar o loop de atualização
+        const MAX_LINHAS_TABELA = 15;
+
+        // Função para destruir gráficos antigos antes de criar novos
+        function destruirGraficos() {
+            if (umidadeChart) umidadeChart.destroy();
+            if (temperaturaChart) temperaturaChart.destroy();
+            if (chuvaChart) chuvaChart.destroy();
+        }
+        
+        // Função principal que redesenha todo o dashboard com base nos dados
+        function renderizarDashboard(dados) {
+            destruirGraficos();
+            
+            const labels = dados.map(d => d.timestamp_grafico);
+            umidadeChart = criarGrafico('umidadeChart', 'Umidade', labels, dados.map(d => d.umidade), 'rgba(54, 162, 235, 1)');
+            temperaturaChart = criarGrafico('temperaturaChart', 'Temperatura', labels, dados.map(d => d.temperatura), 'rgba(255, 99, 132, 1)');
+            chuvaChart = criarGrafico('chuvaChart', 'Chuva', labels, dados.map(d => d.chuva), 'rgba(75, 192, 192, 1)');
+
+            const tbody = document.getElementById('tabela-dados');
+            tbody.innerHTML = '';
+            dados.slice(-MAX_LINHAS_TABELA).reverse().forEach(leitura => {
+                const newRow = tbody.insertRow(0);
+                newRow.innerHTML = `<td>${leitura.timestamp_completo}</td><td>${leitura.umidade}</td><td>${leitura.temperatura}</td><td>${leitura.chuva}</td>`;
+            });
+        }
+        
+        // Função para buscar dados (iniciais ou de um mês específico)
+        async function carregarDados(mes = '') {
+            const response = await fetch(`/api/dados?month=${mes}`);
+            const dados = await response.json();
+            renderizarDashboard(dados);
+
+            // Se estivermos vendo o mês atual (sem filtro), ativa a atualização em tempo real
+            if (updateInterval) clearInterval(updateInterval);
+            if (mes === '') {
+                updateInterval = setInterval(buscarAtualizacao, 5000);
+            }
+        }
+        
+        // Função para popular o menu suspenso de meses
+        async function popularSeletorDeMeses() {
+            const response = await fetch('/api/meses_disponiveis');
+            const meses = await response.json();
+            const seletor = document.getElementById('month-selector');
+            seletor.innerHTML = '<option value="">Tempo Real / Últimos Dados</option>'; // Opção padrão
+            meses.forEach(mes => {
+                const option = document.createElement('option');
+                option.value = mes;
+                option.textContent = mes;
+                seletor.appendChild(option);
+            });
+        }
+
+        // Inicia tudo quando a página carrega
+        document.addEventListener('DOMContentLoaded', () => {
+            popularSeletorDeMeses();
+            carregarDados(); // Carrega os dados iniciais (tempo real)
+            
+            // Adiciona o evento que recarrega o dashboard ao mudar o mês
+            document.getElementById('month-selector').addEventListener('change', (event) => {
+                carregarDados(event.target.value);
+            });
+        });
+
+        // Funções auxiliares (buscarAtualizacao e criarGrafico)
+        async function buscarAtualizacao() { /* ... esta função pode ser adicionada depois para o modo tempo real ... */ }
+        function criarGrafico(canvasId, label, labels, data, color) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: label, data: data, borderColor: color, tension: 0.1 }] } });
+        }
+    </script>
+</body>
+</html>
