@@ -2,61 +2,87 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ info.titulo }}</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; background-color: #f4f4f9; color: #333; padding: 2em; }
         .container { background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 1000px; margin: auto; }
         h1 { color: #0056b3; text-align: center; margin-bottom: 1.5em; }
-        a { display: inline-block; margin-top: 1.5em; color: #007bff; text-decoration: none; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>{{ info.titulo }}</h1>
         <canvas id="sensorChart"></canvas>
-        <a href="javascript:window.close();">Fechar Janela</a>
     </div>
 
     <script>
-        // Recebemos as variáveis do Python (Flask) para o JavaScript
+        // Variáveis recebidas do Python/Flask
         const tipoSensor = '{{ tipo_sensor }}';
         const corGrafico = '{{ info.cor }}';
-        const tituloGrafico = '{{ info.titulo }}';
+        const tituloDataSet = '{{ info.titulo }}';
+        
+        let sensorChart; // Variável global para guardar a instância do gráfico
+        const MAX_PONTOS_GRAFICO = 30;
 
-        window.addEventListener('DOMContentLoaded', async () => {
+        // Função para adicionar um novo ponto ao gráfico
+        function adicionarPontoNoGrafico(leitura) {
+            sensorChart.data.labels.push(leitura.timestamp_grafico);
+            sensorChart.data.datasets[0].data.push(leitura[tipoSensor]);
+
+            // Mantém o número máximo de pontos
+            if (sensorChart.data.labels.length > MAX_PONTOS_GRAFICO) {
+                sensorChart.data.labels.shift();
+                sensorChart.data.datasets[0].data.shift();
+            }
+            sensorChart.update();
+        }
+
+        // Função para buscar a atualização em tempo real
+        async function buscarAtualizacaoGrafico() {
+            try {
+                const response = await fetch('/api/dados_atuais');
+                const novaLeitura = await response.json();
+                adicionarPontoNoGrafico(novaLeitura);
+            } catch (error) {
+                console.error('Erro ao atualizar o gráfico:', error);
+            }
+        }
+
+        // Função principal para carregar o gráfico
+        async function carregarGrafico() {
             try {
                 const response = await fetch('/api/dados_historicos');
-                const dadosCompletos = await response.json();
+                const dadosHistoricos = await response.json();
 
-                // Prepara os dados básicos do gráfico
-                const labels = dadosCompletos.map(d => d.timestamp); // Eixo X
-                const dadosDoSensor = dadosCompletos.map(d => d[tipoSensor]); // Pega os dados do sensor correto (umidade, temperatura ou chuva)
+                const labels = dadosHistoricos.map(d => d.timestamp_grafico);
+                const dadosDoSensor = dadosHistoricos.map(d => d[tipoSensor]);
 
                 const ctx = document.getElementById('sensorChart').getContext('2d');
-                new Chart(ctx, {
+                sensorChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: tituloGrafico,
+                            label: tituloDataSet,
                             data: dadosDoSensor,
                             borderColor: corGrafico,
-                            tension: 0.1,
-                            fill: true
+                            tension: 0.1
                         }]
                     },
-                    options: {
-                        responsive: true,
-                        scales: { y: { beginAtZero: false } } // 'false' é melhor para temperatura
-                    }
+                    options: { scales: { y: { beginAtZero: false } } }
                 });
 
+                // Inicia o loop de atualização após o gráfico ser criado
+                setInterval(buscarAtualizacaoGrafico, 5000); // Atualiza a cada 5 segundos
+
             } catch (error) {
-                console.error('Erro ao criar o gráfico:', error);
+                console.error('Erro ao carregar o gráfico:', error);
             }
-        });
+        }
+
+        // Inicia o processo quando a página carrega
+        document.addEventListener('DOMContentLoaded', carregarGrafico);
     </script>
 </body>
 </html>
