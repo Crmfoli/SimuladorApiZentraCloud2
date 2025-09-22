@@ -1,84 +1,146 @@
 # -*- coding: utf-8 -*-
 
 # ===================================================================================
-#   SIMULADOR WEB (VERSÃO 11.0 - CORREÇÃO DE FUSO HORÁRIO)
+#   SIMULADOR WEB (VERSÃO 12.0 - PERSISTÊNCIA DE DADOS COM CSV)
 #
-#   - Garante que todos os timestamps gerados estejam no horário de Brasília (America/Sao_Paulo).
+#   - Salva todas as leituras em um arquivo CSV em um disco persistente.
+#   - Permite filtrar e visualizar os dados por mês.
 # ===================================================================================
 
+import os
 import random
-# NOVO: Adicionamos a importação da classe ZoneInfo
-from datetime import datetime, timedelta
+from datetime import datetime
 from zoneinfo import ZoneInfo
-from flask import Flask, render_template, request, jsonify
+
+import pandas as pd
+from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
 
-# NOVO: Definimos o fuso horário de Brasília como uma constante
+# --- CONFIGURAÇÃO ---
 TZ_BRASILIA = ZoneInfo("America/Sao_Paulo")
+# O caminho para o nosso arquivo de dados, dentro do disco persistente do Render
+DATA_DIR = "/data"
+DATA_FILE = os.path.join(DATA_DIR, "dados_sensores.csv")
 
-# --- FUNÇÕES DE GERAÇÃO DE DADOS ---
+# --- FUNÇÕES DE MANIPULAÇÃO DE DADOS ---
 
-def gerar_dados_historicos(pontos=30):
-    """Gera uma lista de dados históricos para popular o dashboard inicial."""
-    dados = []
-    # ALTERADO: Usamos o fuso horário de Brasília aqui
-    hora_atual = datetime.now(TZ_BRASILIA)
-    for i in range(pontos):
-        timestamp = hora_atual - timedelta(minutes=(pontos - 1 - i) * 2)
-        leitura = {
-            "timestamp_completo": timestamp.strftime('%d/%m/%Y %H:%M:%S'),
-            "timestamp_grafico": timestamp.strftime('%H:%M:%S'),
-            "umidade": round(random.uniform(30.0, 40.0), 2),
-            "temperatura": round(random.uniform(20.0, 28.0), 2),
-            "chuva": round(random.uniform(0.0, 2.0), 2) if random.random() > 0.85 else 0.0
-        }
-        dados.append(leitura)
-    return dados
+def setup_initial_data():
+    """Cria o arquivo CSV com dados históricos se ele não existir."""
+    if not os.path.exists(DATA_FILE):
+        print(f"Arquivo de dados não encontrado. Criando novo em {DATA_FILE}...")
+        os.makedirs(DATA_DIR, exist_ok=True)
+        # Gera 3 meses de dados históricos para popular o arquivo
+        hora_inicial = datetime.now(TZ_BRASILIA) - pd.DateOffset(months=3)
+        timestamps = pd.to_datetime(pd.date_range(start=hora_inicial, end=datetime.now(TZ_BRASILIA), freq="1H"))
+        
+        dados = []
+        for ts in timestamps:
+            dados.append({
+                "timestamp": ts,
+                "umidade": round(random.uniform(20.0, 50.0), 2),
+                "temperatura": round(random.uniform(15.0, 35.0), 2),
+                "chuva": round(random.uniform(0.0, 5.0), 2) if random.random() > 0.8 else 0.0
+            })
+        
+        df = pd.DataFrame(dados)
+        df.to_csv(DATA_FILE, index=False)
+        print("Arquivo de dados criado com sucesso.")
 
-def gerar_nova_leitura():
-    """Gera apenas UMA nova leitura de dados para a atualização em tempo real."""
-    # ALTERADO: E usamos o fuso horário de Brasília aqui também
-    timestamp = datetime.now(TZ_BRASILIA)
-    return {
-        "timestamp_completo": timestamp.strftime('%d/%m/%Y %H:%M:%S'),
-        "timestamp_grafico": timestamp.strftime('%H:%M:%S'),
-        "umidade": round(random.uniform(30.0, 40.0), 2),
-        "temperatura": round(random.uniform(20.0, 28.0), 2),
-        "chuva": round(random.uniform(0.0, 2.0), 2) if random.random() > 0.95 else 0.0
-    }
+def ler_dados_do_csv():
+    """Lê o arquivo CSV e retorna um DataFrame do Pandas."""
+    if not os.path.exists(DATA_FILE):
+        return pd.DataFrame()
+    # parse_dates=['timestamp'] converte a coluna de texto de volta para um objeto de data
+    return pd.read_csv(DATA_FILE, parse_dates=['timestamp'])
 
-# --- ROTAS DA APLICAÇÃO (sem alterações) ---
+def salvar_nova_leitura(leitura):
+    """Adiciona uma nova linha de leitura ao final do arquivo CSV."""
+    df_leitura = pd.DataFrame([leitura])
+    # Escreve no CSV sem o cabeçalho (mode='a' para 'append')
+    df_leitura.to_csv(DATA_FILE, mode='a', header=False, index=False)
+
+
+# --- ROTAS DA APLICAÇÃO ---
 
 @app.route('/')
 def pagina_de_acesso():
     return render_template('index.html')
 
-@app.route('/dados', methods=['POST'])
-def mostrar_dados():
+@app.route('/dashboard', methods=['POST'])
+def pagina_dashboard():
     device_id = request.form['device_id']
-    return render_template('dados.html', device_id=device_id)
+    return render_template('dashboard.html', device_id=device_id)
 
-@app.route('/grafico/<tipo_sensor>')
-def pagina_grafico_individual(tipo_sensor):
-    info_sensores = {
-        'umidade': {'titulo': 'Umidade do Solo (%)', 'cor': 'rgba(54, 162, 235, 1)'},
-        'temperatura': {'titulo': 'Temperatura do Solo (°C)', 'cor': 'rgba(255, 99, 132, 1)'},
-        'chuva': {'titulo': 'Precipitação (mm)', 'cor': 'rgba(75, 192, 192, 1)'}
-    }
-    info = info_sensores.get(tipo_sensor)
-    if not info:
-        return "Sensor não encontrado", 404
-    return render_template('grafico_individual.html', tipo_sensor=tipo_sensor, info=info)
+# --- ROTAS DE API ---
 
-# --- ROTAS DE API (sem alterações) ---
+@app.route('/api/dados')
+def api_dados():
+    """API principal. Filtra dados por mês e retorna em formato para gráficos e tabela."""
+    df = ler_dados_do_csv()
+    if df.empty:
+        return jsonify([])
 
-@app.route('/api/dados_historicos')
-def api_dados_historicos():
-    return jsonify(gerar_dados_historicos())
+    # Pega o parâmetro 'month' da URL (ex: ?month=2025-09)
+    mes_selecionado = request.args.get('month')
+    
+    # Se um mês foi selecionado, filtra o DataFrame
+    if mes_selecionado:
+        # Garante que a coluna timestamp é do tipo datetime
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        # Filtra pelo mês e ano (formato 'YYYY-MM')
+        df_filtrado = df[df['timestamp'].dt.strftime('%Y-%m') == mes_selecionado]
+    else:
+        # Se nenhum mês for selecionado, retorna os últimos 30 pontos
+        df_filtrado = df.tail(30)
+
+    # Formata os dados para a resposta JSON
+    dados_formatados = []
+    for _, row in df_filtrado.iterrows():
+        dados_formatados.append({
+            "timestamp_completo": row['timestamp'].strftime('%d/%m/%Y %H:%M:%S'),
+            "timestamp_grafico": row['timestamp'].strftime('%H:%M:%S'),
+            "umidade": row['umidade'],
+            "temperatura": row['temperatura'],
+            "chuva": row['chuva']
+        })
+    return jsonify(dados_formatados)
+
 
 @app.route('/api/dados_atuais')
 def api_dados_atuais():
-    return jsonify(gerar_nova_leitura())
+    """Gera, SALVA e retorna uma nova leitura."""
+    nova_leitura = {
+        "timestamp": datetime.now(TZ_BRASILIA),
+        "umidade": round(random.uniform(30.0, 40.0), 2),
+        "temperatura": round(random.uniform(20.0, 28.0), 2),
+        "chuva": round(random.uniform(0.0, 2.0), 2) if random.random() > 0.95 else 0.0
+    }
+    salvar_nova_leitura(nova_leitura)
+    
+    # Formata para o frontend
+    leitura_formatada = {
+        "timestamp_completo": nova_leitura['timestamp'].strftime('%d/%m/%Y %H:%M:%S'),
+        "timestamp_grafico": nova_leitura['timestamp'].strftime('%H:%M:%S'),
+        **{k: v for k, v in nova_leitura.items() if k != 'timestamp'}
+    }
+    return jsonify(leitura_formatada)
+
+@app.route('/api/meses_disponiveis')
+def api_meses_disponiveis():
+    """Retorna uma lista de meses (formato 'YYYY-MM') que possuem dados."""
+    df = ler_dados_do_csv()
+    if df.empty:
+        return jsonify([])
+    
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    # Cria uma coluna 'mes_ano', pega os valores únicos e reverte a ordem
+    meses = df['timestamp'].dt.strftime('%Y-%m').unique().tolist()
+    meses.reverse()
+    return jsonify(meses)
+
+# --- INICIALIZAÇÃO ---
+# Garante que o arquivo de dados exista ao iniciar a aplicação
+setup_initial_data()
 
 
