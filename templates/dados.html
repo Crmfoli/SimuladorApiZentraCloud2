@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dados do Dispositivo</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f4f9; color: #333; padding: 2em; }
+        .container { background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
+        h1, h2 { color: #0056b3; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5em; }
+        th, td { padding: 0.8em; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        a { display: inline-block; margin-top: 1.5em; color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dados Recebidos da "API"</h1>
+        <h2>Dispositivo: {{ device_id }}</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Horário da Medição</th>
+                    <th>Umidade do Solo (%)</th>
+                    <th>Temp. do Solo (°C)</th>
+                    <th>Chuva (mm)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for leitura in leituras %}
+                <tr>
+                    <td>{{ leitura.Horario }}</td>
+                    <td>{{ leitura.Umidade }}</td>
+                    <td>{{ leitura.Temperatura }}</td>
+                    <td>{{ leitura.Chuva }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <a href="/">Voltar para a tela de acesso</a>
+    </div>
+</body>
+</html>
