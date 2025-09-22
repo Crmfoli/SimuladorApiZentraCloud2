@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # ===================================================================================
-#   SIMULADOR WEB (VERSÃO 12.2 - CORREÇÃO DE RACE CONDITION DO DISCO)
+#   SIMULADOR WEB (VERSÃO FINAL E CORRIGIDA)
 #
-#   - Adota a estratégia de "Lazy Initialization" para criar o arquivo de dados.
-#   - O arquivo só é criado na primeira vez que os dados são lidos, evitando erros de timing.
+#   - Garante que todas as rotas de API estejam consistentes com o frontend.
+#   - Lógica de persistência e filtro de dados revisada.
 # ===================================================================================
 
 import os
@@ -17,7 +17,7 @@ from flask import Flask, jsonify, render_template, request
 
 app = Flask(__name__)
 
-# --- CONFIGURAÇÃO (sem alterações) ---
+# --- CONFIGURAÇÃO ---
 TZ_BRASILIA = ZoneInfo("America/Sao_Paulo")
 DATA_DIR = "/data"
 DATA_FILE = os.path.join(DATA_DIR, "dados_sensores.csv")
@@ -25,9 +25,8 @@ DATA_FILE = os.path.join(DATA_DIR, "dados_sensores.csv")
 # --- FUNÇÕES DE MANIPULAÇÃO DE DADOS ---
 
 def create_initial_data_file():
-    """Cria o arquivo CSV com dados históricos. Esta função só é chamada se o arquivo não existir."""
+    """Cria o arquivo CSV com dados históricos se ele não existir."""
     print(f"Arquivo de dados não encontrado. Criando novo em {DATA_FILE}...")
-    
     hora_inicial = datetime.now(TZ_BRASILIA) - pd.DateOffset(months=3)
     timestamps = pd.to_datetime(pd.date_range(start=hora_inicial, end=datetime.now(TZ_BRASILIA), freq="1H"))
     
@@ -39,24 +38,16 @@ def create_initial_data_file():
             "temperatura": round(random.uniform(15.0, 35.0), 2),
             "chuva": round(random.uniform(0.0, 5.0), 2) if random.random() > 0.8 else 0.0
         })
-    
     df = pd.DataFrame(dados)
     df.to_csv(DATA_FILE, index=False)
     print("Arquivo de dados criado com sucesso.")
 
-# =======================================================================
-# ALTERAÇÃO CRÍTICA AQUI
-# =======================================================================
 def ler_dados_do_csv():
     """Lê o arquivo CSV. Se o arquivo não existir, chama a função para criá-lo primeiro."""
-    # Esta verificação agora acontece aqui, sob demanda.
     if not os.path.exists(DATA_FILE):
         create_initial_data_file()
-
     if not os.path.exists(DATA_FILE):
-        # Se mesmo após a tentativa de criação o arquivo não existir, retorna um DataFrame vazio.
         return pd.DataFrame()
-        
     return pd.read_csv(DATA_FILE, parse_dates=['timestamp'])
 
 def salvar_nova_leitura(leitura):
@@ -64,8 +55,7 @@ def salvar_nova_leitura(leitura):
     df_leitura = pd.DataFrame([leitura])
     df_leitura.to_csv(DATA_FILE, mode='a', header=False, index=False)
 
-
-# --- ROTAS DA APLICAÇÃO (sem alterações) ---
+# --- ROTAS DA APLICAÇÃO ---
 
 @app.route('/')
 def pagina_de_acesso():
@@ -76,19 +66,23 @@ def pagina_dashboard():
     device_id = request.form['device_id']
     return render_template('dashboard.html', device_id=device_id)
 
-# --- ROTAS DE API (sem alterações) ---
+# --- ROTAS DE API ---
 
 @app.route('/api/dados')
 def api_dados():
+    """API principal. Filtra dados por mês ou retorna os mais recentes."""
     df = ler_dados_do_csv()
     if df.empty:
         return jsonify([])
+
     mes_selecionado = request.args.get('month')
+    
     if mes_selecionado:
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         df_filtrado = df[df['timestamp'].dt.strftime('%Y-%m') == mes_selecionado]
     else:
         df_filtrado = df.tail(30)
+
     dados_formatados = []
     for _, row in df_filtrado.iterrows():
         dados_formatados.append({
@@ -100,9 +94,9 @@ def api_dados():
         })
     return jsonify(dados_formatados)
 
-
 @app.route('/api/dados_atuais')
 def api_dados_atuais():
+    """Gera, SALVA e retorna uma nova leitura."""
     nova_leitura = {
         "timestamp": datetime.now(TZ_BRASILIA),
         "umidade": round(random.uniform(30.0, 40.0), 2),
@@ -110,15 +104,19 @@ def api_dados_atuais():
         "chuva": round(random.uniform(0.0, 2.0), 2) if random.random() > 0.95 else 0.0
     }
     salvar_nova_leitura(nova_leitura)
+    
     leitura_formatada = {
         "timestamp_completo": nova_leitura['timestamp'].strftime('%d/%m/%Y %H:%M:%S'),
         "timestamp_grafico": nova_leitura['timestamp'].strftime('%H:%M:%S'),
-        **{k: v for k, v in nova_leitura.items() if k != 'timestamp'}
+        "umidade": nova_leitura['umidade'],
+        "temperatura": nova_leitura['temperatura'],
+        "chuva": nova_leitura['chuva']
     }
     return jsonify(leitura_formatada)
 
 @app.route('/api/meses_disponiveis')
 def api_meses_disponiveis():
+    """Retorna uma lista de meses que possuem dados."""
     df = ler_dados_do_csv()
     if df.empty:
         return jsonify([])
@@ -126,12 +124,3 @@ def api_meses_disponiveis():
     meses = df['timestamp'].dt.strftime('%Y-%m').unique().tolist()
     meses.reverse()
     return jsonify(meses)
-
-# =======================================================================
-# REMOVIDO: A chamada de inicialização não acontece mais aqui no final.
-# =======================================================================
-# setup_initial_data()
-
-
-
-
