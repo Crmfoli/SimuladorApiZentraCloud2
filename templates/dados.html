@@ -1,98 +1,41 @@
-<a href="/">Voltar para a tela de acesso</a>
-        <a href="/graficos" style="margin-left: 1em;">Ver Gráficos</a>
-
-    </div>
-
-    ```
-
----
-### Passo 3: Criar a Nova Página de Gráficos (`templates/graficos.html`)
-
-Agora, crie o arquivo `graficos.html` dentro da sua pasta `templates`. Este arquivo é o coração da nova funcionalidade. Ele irá carregar a biblioteca Chart.js, buscar os dados da nossa nova API e desenhar os gráficos.
-
-```html
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráficos dos Sensores</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Dashboard em Tempo Real</title>
     <style>
-        body { font-family: sans-serif; background-color: #f4f4f9; color: #333; padding: 2em; }
-        .container { background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 1000px; margin: auto; }
-        h1 { color: #0056b3; text-align: center; margin-bottom: 1.5em; }
-        .chart-container { margin-bottom: 2em; }
-        a { display: inline-block; margin-top: 1.5em; color: #007bff; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        /* ... (seu CSS existente) ... */
+        /* NOVO - Estilos para os botões dos gráficos */
+        .botoes-graficos { text-align: center; margin-bottom: 1.5em; }
+        .botoes-graficos a {
+            background-color: #6c757d; color: white;
+            padding: 0.6em 1.2em; text-decoration: none;
+            border-radius: 5px; margin: 0 5px;
+            transition: background-color 0.3s;
+        }
+        .botoes-graficos a:hover { background-color: #5a6268; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Análise Gráfica dos Sensores</h1>
+        <h1>Dashboard em Tempo Real</h1>
+        <h2>Dispositivo: {{ device_id }}</h2>
 
-        <div class="chart-container">
-            <h2>Umidade do Solo (%)</h2>
-            <canvas id="umidadeChart"></canvas>
+        <div class="botoes-graficos">
+            <a href="/grafico/umidade" target="_blank">Gráfico Umidade</a>
+            <a href="/grafico/temperatura" target="_blank">Gráfico Temperatura</a>
+            <a href="/grafico/chuva" target="_blank">Gráfico Chuva</a>
         </div>
-        <div class="chart-container">
-            <h2>Temperatura do Solo (°C)</h2>
-            <canvas id="temperaturaChart"></canvas>
-        </div>
-        <div class="chart-container">
-            <h2>Precipitação (mm)</h2>
-            <canvas id="chuvaChart"></canvas>
-        </div>
+
+        <table>
+            </table>
         
         <a href="/">Voltar para a tela de acesso</a>
     </div>
 
     <script>
-        // 3. O JavaScript que busca os dados e cria os gráficos
-        // Executa o script quando a página terminar de carregar
-        window.addEventListener('DOMContentLoaded', async () => {
-            try {
-                // Busca os dados da nossa nova API
-                const response = await fetch('/api/dados_historicos');
-                const dados = await response.json();
-
-                // Prepara os dados para os gráficos
-                const labels = dados.map(d => d.timestamp); // Eixo X (Horários)
-                const dadosUmidade = dados.map(d => d.umidade);
-                const dadosTemperatura = dados.map(d => d.temperatura);
-                const dadosChuva = dados.map(d => d.chuva);
-
-                // Função auxiliar para criar um gráfico
-                function criarGrafico(canvasId, label, dadosDoSensor, cor) {
-                    const ctx = document.getElementById(canvasId).getContext('2d');
-                    new Chart(ctx, {
-                        type: 'line', // Tipo de gráfico
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: label,
-                                data: dadosDoSensor,
-                                borderColor: cor,
-                                tension: 0.1,
-                                fill: false
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            scales: { y: { beginAtZero: true } }
-                        }
-                    });
-                }
-
-                // Cria os três gráficos
-                criarGrafico('umidadeChart', 'Umidade (%)', dadosUmidade, 'rgba(54, 162, 235, 1)');
-                criarGrafico('temperaturaChart', 'Temperatura (°C)', dadosTemperatura, 'rgba(255, 99, 132, 1)');
-                criarGrafico('chuvaChart', 'Chuva (mm)', dadosChuva, 'rgba(75, 192, 192, 1)');
-
-            } catch (error) {
-                console.error('Erro ao buscar ou criar os gráficos:', error);
-            }
-        });
+        // ... (seu script existente para atualizar a tabela a cada 2 segundos) ...
     </script>
 </body>
 </html>
