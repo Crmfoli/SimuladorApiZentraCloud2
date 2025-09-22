@@ -17,72 +17,53 @@
     <div class="container">
         <div class="header-grafico">
             <h1>{{ info.titulo }}</h1>
-            <h2 id="valor-medio">Média (10 pts): Calculando...</h2>
+            <h2 id="valor-medio">Média Móvel (10 pts): Calculando...</h2>
         </div>
         <canvas id="sensorChart"></canvas>
         <a href="javascript:window.close();">Fechar Janela</a>
     </div>
 
     <script>
-        // Variáveis de configuração
+        // --- Variáveis de Configuração ---
         const tipoSensor = '{{ tipo_sensor }}';
         const corGrafico = '{{ info.cor }}';
         const tituloDataSet = '{{ info.titulo }}';
-        
-        let sensorChart; // Guarda o objeto do gráfico
+        let sensorChart; // Guarda o objeto do gráfico para ser acessado por outras funções
         const MAX_PONTOS_GRAFICO = 30; // Pontos visíveis no gráfico
+        const INTERVALO_ATUALIZACAO_MS = 5000; // 5 segundos
 
-        // --- FUNÇÃO CORRIGIDA PARA CALCULAR A MÉDIA MÓVEL ---
-        function calcularEMostrarMedia() {
-            // Pega a lista ATUAL de valores do dataset do gráfico.
+        // ===================================================================
+        // FUNÇÃO DA MÉDIA MÓVEL - O CORAÇÃO DA LÓGICA
+        // ===================================================================
+        function calcularMediaMovel() {
+            // 1. Pega a lista COMPLETA de dados que o gráfico está usando no momento.
             const dataPoints = sensorChart.data.datasets[0].data;
             
-            // Pega apenas os últimos 10 pontos. Se houver menos de 10, pega todos que existirem.
+            // 2. Cria a "janela deslizante": pega apenas os últimos 10 pontos da lista.
+            // Se houver menos de 10 pontos no total, ele pega todos os que existirem.
             const ultimos10Pontos = dataPoints.slice(-10);
 
-            // Calcula a soma de todos os valores na lista 'ultimos10Pontos'.
+            // 3. Calcula a soma e a média desses 10 (ou menos) pontos.
             const soma = ultimos10Pontos.reduce((total, valor) => total + valor, 0);
-            
-            // Calcula a média.
             const media = soma / ultimos10Pontos.length;
 
-            // Encontra o elemento H2 na página e atualiza o texto com o valor formatado.
+            // 4. Atualiza o texto na tela com o resultado.
             const mediaElement = document.getElementById('valor-medio');
-            mediaElement.textContent = `Média (10 pts): ${media.toFixed(2)}`;
+            mediaElement.textContent = `Média Móvel (10 pts): ${media.toFixed(2)}`;
         }
-
-        // --- FUNÇÃO PARA ATUALIZAR O GRÁFICO E ACIONAR O RECÁLCULO DA MÉDIA ---
-        function atualizarGraficoComNovoPonto(leitura) {
-            // Adiciona o novo rótulo (hora) e o novo dado
-            sensorChart.data.labels.push(leitura.timestamp_grafico);
-            sensorChart.data.datasets[0].data.push(leitura[tipoSensor]);
-
-            // Remove o ponto mais antigo se o gráfico estiver cheio
-            if (sensorChart.data.labels.length > MAX_PONTOS_GRAFICO) {
-                sensorChart.data.labels.shift();
-                sensorChart.data.datasets[0].data.shift();
-            }
-            
-            // Redesenha o gráfico na tela
-            sensorChart.update();
-            
-            // IMPORTANTE: Após o gráfico ser atualizado com o novo ponto,
-            // chamamos a função para recalcular a média com os dados mais recentes.
-            calcularEMostrarMedia();
-        }
-
-        // --- FUNÇÃO PRINCIPAL QUE INICIA TUDO ---
+        
+        // --- FUNÇÃO PRINCIPAL QUE INICIA A PÁGINA ---
         async function iniciarPagina() {
             try {
-                // 1. Busca os dados históricos para a carga inicial
+                // Busca os dados históricos para a carga inicial
                 const response = await fetch('/api/dados_historicos');
                 const dadosHistoricos = await response.json();
 
-                // 2. Prepara os dados para o formato que o Chart.js precisa
+                // Prepara os dados para o formato que o Chart.js precisa
                 const labels = dadosHistoricos.map(d => d.timestamp_grafico);
                 const dadosDoSensor = dadosHistoricos.map(d => d[tipoSensor]);
 
-                // 3. Cria o gráfico pela primeira vez
+                // Cria o gráfico
                 const ctx = document.getElementById('sensorChart').getContext('2d');
                 sensorChart = new Chart(ctx, {
                     type: 'line',
@@ -93,26 +74,19 @@
                     options: { scales: { y: { beginAtZero: false } } }
                 });
 
-                // 4. Calcula a média com os dados iniciais
-                calcularEMostrarMedia();
+                // Calcula a média pela primeira vez com os dados iniciais
+                calcularMediaMovel();
 
-                // 5. Inicia o loop que buscará novas leituras a cada 5 segundos
+                // Inicia o loop que buscará novas leituras
                 setInterval(async () => {
                     const res = await fetch('/api/dados_atuais');
                     const novaLeitura = await res.json();
-                    atualizarGraficoComNovoPonto(novaLeitura);
-                }, 5000);
+                    
+                    // --- ATUALIZAÇÃO PONTO A PONTO ---
+                    // Adiciona o novo ponto ao gráfico
+                    sensorChart.data.labels.push(novaLeitura.timestamp_grafico);
+                    sensorChart.data.datasets[0].
 
-            } catch (error) {
-                console.error('Erro ao carregar a página do gráfico:', error);
-            }
-        }
-
-        // Aciona a função principal quando o HTML da página terminar de carregar
-        document.addEventListener('DOMContentLoaded', iniciarPagina);
-    </script>
-</body>
-</html>
 
 
 
