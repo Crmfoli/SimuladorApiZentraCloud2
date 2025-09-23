@@ -5,32 +5,45 @@
     <title>Mapa de Sensores - RC Engenharia</title>
     <style>
         body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; }
-        .header { background: #fff; padding: 1em 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 1em; }
+        .header { background: #fff; padding: 1em 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 1em; z-index: 10; position: relative; }
         .logo-header { height: 40px; }
         h1 { color: #0056b3; margin: 0; font-size: 1.5em; }
+        
+        /* --- MUDANÇAS IMPORTANTES NO CSS PARA O MAPA --- */
         .map-container {
-            position: relative;
-            text-align: center;
-            padding: 2em;
-            background-color: #ddd; /* Cor de fundo caso a imagem demore a carregar */
+            position: absolute; /* Ocupa a tela toda */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Esconde as barras de rolagem */
         }
-        .map-image {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .map-iframe {
+            width: 100%;
+            height: 100%;
+            border: none; /* Remove a borda padrão do iframe */
+        }
+        .content-overlay {
+            /* Este container centraliza o card de informações sobre o mapa */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* Permite clicar "através" dele para interagir com o mapa */
         }
         .sensor-info {
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             border-radius: 8px;
             padding: 1.5em;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%;
-            max-width: 350px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+            pointer-events: auto; /* Reativa os cliques apenas para este card */
         }
         .sensor-info h2 { margin-top: 0; color: #333; }
         .sensor-info p { margin: 0.5em 0; }
@@ -55,8 +68,16 @@
     </div>
 
     <div class="map-container">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/Complexo_Anchieta-Imigrantes.jpg" alt="Mapa da Rodovia na Serra do Mar" class="map-image">
+        <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d58633.2010263158!2d-45.67107874863281!3d-23.4115431!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94cd7a642e038521%3A0x6a5d3a4b0d0d8b4!2sRodovia%20dos%20Tamoios!5e0!3m2!1spt-BR!2sbr!4v1695498155555!5m2!1spt-BR!2sbr" 
+            class="map-iframe" 
+            allowfullscreen="" 
+            loading="lazy" 
+            referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+    </div>
 
+    <div class="content-overlay">
         <div class="sensor-info">
             <h2>Sensor de Encosta</h2>
             <p><strong>ID do Dispositivo:</strong> {{ device_id }}</p>
