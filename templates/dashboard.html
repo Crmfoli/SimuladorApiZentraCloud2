@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard com Histórico</title>
+    <title>Dashboard Zentra Cloud</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f0f2f5; color: #333; margin: 0; }
@@ -43,22 +43,56 @@
     <script>
         let umidadeChart, temperaturaChart, chuvaChart;
         let updateInterval;
+        const MAX_PONTOS_GRAFICO = 30;
         const MAX_LINHAS_TABELA = 15;
 
-        function destruirGraficos() {
-            if (umidadeChart) umidadeChart.destroy();
-            if (temperaturaChart) temperaturaChart.destroy();
-            if (chuvaChart) chuvaChart.destroy();
+        // Função para atualizar tudo (tabela e gráficos) com um novo dado
+        function atualizarDashboardComNovoPonto(leitura) {
+            // Atualiza a Tabela
+            const tbody = document.getElementById('tabela-dados');
+            const newRow = tbody.insertRow(0);
+            newRow.innerHTML = `<td>${leitura.timestamp_completo}</td><td>${leitura.umidade}</td><td>${leitura.temperatura}</td><td>${leitura.chuva}</td>`;
+            while (tbody.rows.length > MAX_LINHAS_TABELA) {
+                tbody.deleteRow(tbody.rows.length - 1);
+            }
+
+            // Atualiza os Gráficos
+            const charts = { umidade: umidadeChart, temperatura: temperaturaChart, chuva: chuvaChart };
+            for (const [key, chart] of Object.entries(charts)) {
+                if (chart) {
+                    chart.data.labels.push(leitura.timestamp_grafico);
+                    chart.data.datasets[0].data.push(leitura[key]);
+                    if (chart.data.labels.length > MAX_PONTOS_GRAFICO) {
+                        chart.data.labels.shift();
+                        chart.data.datasets[0].data.shift();
+                    }
+                    chart.update();
+                }
+            }
+        }
+
+        // =======================================================================
+        // FUNÇÃO CORRIGIDA: Esta função agora tem a lógica de atualização.
+        // =======================================================================
+        async function buscarAtualizacao() {
+            try {
+                const response = await fetch('/api/dados_atuais');
+                if (!response.ok) return; // Se a API falhar, simplesmente ignora esta atualização
+                const novaLeitura = await response.json();
+                atualizarDashboardComNovoPonto(novaLeitura);
+            } catch (error) {
+                console.error("Erro na atualização em tempo real:", error);
+            }
         }
         
+        // Função que renderiza o dashboard pela primeira vez
         function renderizarDashboard(dados) {
             destruirGraficos();
-            
             const labels = dados.map(d => d.timestamp_grafico);
             umidadeChart = criarGrafico('umidadeChart', 'Umidade', labels, dados.map(d => d.umidade), 'rgba(54, 162, 235, 1)');
             temperaturaChart = criarGrafico('temperaturaChart', 'Temperatura', labels, dados.map(d => d.temperatura), 'rgba(255, 99, 132, 1)');
             chuvaChart = criarGrafico('chuvaChart', 'Chuva', labels, dados.map(d => d.chuva), 'rgba(75, 192, 192, 1)');
-
+            
             const tbody = document.getElementById('tabela-dados');
             tbody.innerHTML = '';
             dados.slice(-MAX_LINHAS_TABELA).reverse().forEach(leitura => {
@@ -69,13 +103,13 @@
         
         async function carregarDados(mes = '') {
             try {
-                // A chamada de API correta é para '/api/dados'
                 const response = await fetch(`/api/dados?month=${mes}`);
                 if (!response.ok) throw new Error('Falha ao buscar dados');
                 const dados = await response.json();
                 renderizarDashboard(dados);
 
                 if (updateInterval) clearInterval(updateInterval);
+                // Ativa a atualização em tempo real apenas se nenhum mês estiver selecionado
                 if (mes === '') {
                     updateInterval = setInterval(buscarAtualizacao, 5000);
                 }
@@ -85,8 +119,8 @@
         }
         
         async function popularSeletorDeMeses() {
+            // ... (código existente, sem alterações)
             try {
-                // A chamada de API correta é para '/api/meses_disponiveis'
                 const response = await fetch('/api/meses_disponiveis');
                 if (!response.ok) throw new Error('Falha ao buscar meses');
                 const meses = await response.json();
@@ -102,17 +136,21 @@
                 console.error("Erro ao popular seletor de meses:", error);
             }
         }
-
-        async function buscarAtualizacao() { /* Esta função pode ser implementada se desejar que o modo tempo real adicione linhas dinamicamente em vez de recarregar */ }
+        
         function criarGrafico(canvasId, label, labels, data, color) {
             const ctx = document.getElementById(canvasId).getContext('2d');
             return new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: label, data: data, borderColor: color, tension: 0.1 }] } });
         }
         
+        function destruirGraficos() {
+            if (umidadeChart) umidadeChart.destroy();
+            if (temperaturaChart) temperaturaChart.destroy();
+            if (chuvaChart) chuvaChart.destroy();
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             popularSeletorDeMeses();
             carregarDados();
-            
             document.getElementById('month-selector').addEventListener('change', (event) => {
                 carregarDados(event.target.value);
             });
