@@ -21,8 +21,12 @@
             display: inline-block;
             padding: 0.8em 1.5em;
             background-color: #28a745;
-            /* CORREÇÃO AQUI: Alterando para preto (#000 ou black) */
-            color: black; 
+            
+            /* CORREÇÃO DEFINITIVA: 
+              Adicionado !important para forçar a cor preta e sobrescrever qualquer outro estilo.
+            */
+            color: black !important; 
+            
             text-decoration: none;
             border-radius: 5px;
             font-weight: bold;
@@ -53,7 +57,7 @@
         // Marcador do sensor
         var marker = L.marker([-23.35, -45.75]).addTo(map);
 
-        // Popup com informações
+        // Popup com o botão
         marker.bindPopup(`
             <a href="/dashboard?device_id={{ device_id }}" class="btn-acessar">{{ device_id }}</a>
         `).openPopup();
