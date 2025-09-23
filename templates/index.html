@@ -6,19 +6,21 @@
     <style>
         body { font-family: sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .container { background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        /* Centraliza os logos e o subtítulo */
+        
         .header-logos {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 2.5em; /* Espaçamento entre os logos e o formulário */
+            margin-bottom: 2.5em; 
         }
-        .logo-rc { max-width: 100%; height: auto; margin-bottom: 1em; } /* Espaçamento entre o logo RC e o subtítulo */
-        .subtitulo { color: #555; font-size: 1.1em; margin-bottom: 1.5em; } /* Espaçamento entre o subtítulo e o logo Tamoios */
+        .logo-rc { max-width: 100%; height: auto; margin-bottom: 2em; } /* Aumenta o espaço abaixo do logo principal */
+        
+        /* O estilo para .subtitulo foi removido */
+
         .logo-tamoios-login {
-            max-width: 250px; /* Ajuste a largura conforme necessário */
+            max-width: 250px;
             height: auto;
-            margin-bottom: 2em; /* Espaçamento entre o logo Tamoios e os campos */
+            margin-bottom: 2em;
         }
 
         form { display: flex; flex-direction: column; text-align: left; }
@@ -31,7 +33,7 @@
     <div class="container">
         <div class="header-logos">
             <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo da Empresa" class="logo-rc">
-            <p class="subtitulo">Análise de Riscos Geológicos</p>
+            
             <img src="{{ url_for('static', filename='images/tamoios.png') }}" alt="Logo Tamoios" class="logo-tamoios-login">
         </div>
         
@@ -50,4 +52,5 @@
     </div>
 </body>
 </html>
+
 
