@@ -15,6 +15,8 @@
         .data-table-container { flex: 2; min-width: 400px; }
         .card { background: #fff; padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 0.5em; margin-top: 0; font-size: 1.2em; }
+        /* NOVO: Estilo para o texto da média */
+        .media-valor { text-align: center; color: #e85d04; font-size: 1.2em; font-weight: bold; margin-top: -0.5em; margin-bottom: 1em; }
         table { width: 100%; border-collapse: collapse; margin-top: 1em; }
         th, td { padding: 0.7em; text-align: left; border-bottom: 1px solid #ddd; font-size: 0.9em; }
         th { background-color: #007bff; color: white; }
@@ -31,9 +33,21 @@
 
     <div class="main-container">
         <div class="chart-grid">
-            <div class="card"><h2>Umidade do Solo (%)</h2><canvas id="umidadeChart"></canvas></div>
-            <div class="card"><h2>Temperatura do Solo (°C)</h2><canvas id="temperaturaChart"></canvas></div>
-            <div class="card" style="grid-column: 1 / -1;"><h2>Precipitação (mm)</h2><canvas id="chuvaChart"></canvas></div>
+            <div class="card">
+                <h2>Umidade do Solo (%)</h2>
+                <h3 class="media-valor" id="media-umidade">Média (10 pts): --</h3>
+                <canvas id="umidadeChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>Temperatura do Solo (°C)</h2>
+                <h3 class="media-valor" id="media-temperatura">Média (10 pts): --</h3>
+                <canvas id="temperaturaChart"></canvas>
+            </div>
+            <div class="card" style="grid-column: 1 / -1;">
+                <h2>Precipitação (mm)</h2>
+                <h3 class="media-valor" id="media-chuva">Média (10 pts): --</h3>
+                <canvas id="chuvaChart"></canvas>
+            </div>
         </div>
         <div class="data-table-container">
             <div class="card"><h2>Últimas Leituras</h2><table id="real-time-table"><thead><tr><th>Horário</th><th>Umidade</th><th>Temp.</th><th>Chuva</th></tr></thead><tbody id="tabela-dados"></tbody></table></div>
@@ -46,7 +60,24 @@
         const MAX_PONTOS_GRAFICO = 30;
         const MAX_LINHAS_TABELA = 15;
 
-        // Função para atualizar tudo (tabela e gráficos) com um novo dado
+        // =======================================================================
+        // NOVA FUNÇÃO: Calcula e exibe a média móvel para todos os gráficos.
+        // =======================================================================
+        function calcularEAtualizarMedias() {
+            const charts = { umidade: umidadeChart, temperatura: temperaturaChart, chuva: chuvaChart };
+            for (const [key, chart] of Object.entries(charts)) {
+                if (chart) {
+                    const dataPoints = chart.data.datasets[0].data;
+                    const ultimos10Pontos = dataPoints.slice(-10);
+                    if (ultimos10Pontos.length > 0) {
+                        const soma = ultimos10Pontos.reduce((total, valor) => total + valor, 0);
+                        const media = soma / ultimos10Pontos.length;
+                        document.getElementById(`media-${key}`).textContent = `Média (10 pts): ${media.toFixed(2)}`;
+                    }
+                }
+            }
+        }
+
         function atualizarDashboardComNovoPonto(leitura) {
             // Atualiza a Tabela
             const tbody = document.getElementById('tabela-dados');
@@ -69,15 +100,15 @@
                     chart.update();
                 }
             }
+            
+            // ATUALIZAÇÃO: Após adicionar o novo ponto, recalcula a média.
+            calcularEAtualizarMedias();
         }
-
-        // =======================================================================
-        // FUNÇÃO CORRIGIDA: Esta função agora tem a lógica de atualização.
-        // =======================================================================
+        
         async function buscarAtualizacao() {
             try {
                 const response = await fetch('/api/dados_atuais');
-                if (!response.ok) return; // Se a API falhar, simplesmente ignora esta atualização
+                if (!response.ok) return;
                 const novaLeitura = await response.json();
                 atualizarDashboardComNovoPonto(novaLeitura);
             } catch (error) {
@@ -85,7 +116,6 @@
             }
         }
         
-        // Função que renderiza o dashboard pela primeira vez
         function renderizarDashboard(dados) {
             destruirGraficos();
             const labels = dados.map(d => d.timestamp_grafico);
@@ -99,30 +129,26 @@
                 const newRow = tbody.insertRow(0);
                 newRow.innerHTML = `<td>${leitura.timestamp_completo}</td><td>${leitura.umidade}</td><td>${leitura.temperatura}</td><td>${leitura.chuva}</td>`;
             });
+
+            // ATUALIZAÇÃO: Calcula a média com os dados iniciais.
+            calcularEAtualizarMedias();
         }
         
         async function carregarDados(mes = '') {
             try {
                 const response = await fetch(`/api/dados?month=${mes}`);
-                if (!response.ok) throw new Error('Falha ao buscar dados');
                 const dados = await response.json();
                 renderizarDashboard(dados);
-
                 if (updateInterval) clearInterval(updateInterval);
-                // Ativa a atualização em tempo real apenas se nenhum mês estiver selecionado
                 if (mes === '') {
                     updateInterval = setInterval(buscarAtualizacao, 5000);
                 }
-            } catch (error) {
-                console.error("Erro ao carregar dados:", error);
-            }
+            } catch (error) { console.error("Erro ao carregar dados:", error); }
         }
         
         async function popularSeletorDeMeses() {
-            // ... (código existente, sem alterações)
             try {
                 const response = await fetch('/api/meses_disponiveis');
-                if (!response.ok) throw new Error('Falha ao buscar meses');
                 const meses = await response.json();
                 const seletor = document.getElementById('month-selector');
                 seletor.innerHTML = '<option value="">Tempo Real / Últimos Dados</option>';
@@ -132,17 +158,14 @@
                     option.textContent = mes;
                     seletor.appendChild(option);
                 });
-            } catch (error) {
-                console.error("Erro ao popular seletor de meses:", error);
-            }
+            } catch (error) { console.error("Erro ao popular seletor de meses:", error); }
         }
         
-        function criarGrafico(canvasId, label, labels, data, color) {
+        function criarGrafico(canvasId, label, labels, data, color) { /* ... (sem alterações) ... */
             const ctx = document.getElementById(canvasId).getContext('2d');
             return new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: label, data: data, borderColor: color, tension: 0.1 }] } });
         }
-        
-        function destruirGraficos() {
+        function destruirGraficos() { /* ... (sem alterações) ... */
             if (umidadeChart) umidadeChart.destroy();
             if (temperaturaChart) temperaturaChart.destroy();
             if (chuvaChart) chuvaChart.destroy();
