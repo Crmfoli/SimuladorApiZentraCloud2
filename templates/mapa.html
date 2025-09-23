@@ -12,26 +12,42 @@
         #map { height: calc(100vh - 80px); width: 100%; }
         .leaflet-popup-content-wrapper { border-radius: 8px; }
         .leaflet-popup-content { text-align: center; }
-        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color: 0.3s; }
+        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s; }
         .btn-acessar:hover { background-color: #218838; }
 
-        /* --- ESTILOS ATUALIZADOS PARA A LEGENDA --- */
+        /* --- Estilos para o Logo no canto superior esquerdo --- */
+        #logo-tamoios-mapa {
+            position: absolute;
+            top: 85px; /* Abaixo do cabeçalho */
+            left: 15px; /* No canto superior esquerdo */
+            z-index: 1000; /* Garante que fique sobre o mapa */
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            max-width: 200px; /* Ajuste a largura conforme preferir */
+            height: auto;
+        }
+        #logo-tamoios-mapa img {
+            max-width: 100%;
+            height: auto;
+            display: block; /* Garante que a imagem se ajuste ao container */
+        }
+
+        /* --- Estilos para a Legenda no canto superior direito (mantido) --- */
         #legenda-mapa {
             position: absolute;
             top: 85px;
             right: 15px;
             z-index: 1000;
             background-color: rgba(255, 255, 255, 0.9);
-            /* Aumenta o espaçamento interno */
             padding: 15px; 
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            /* Aumenta a largura da caixa */
             width: 300px; 
         }
         #legenda-mapa h3 {
             margin: 0 0 10px 0;
-            /* Aumenta o tamanho do título */
             font-size: 1.1em; 
             text-align: center;
             border-bottom: 1px solid #ccc;
@@ -42,9 +58,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            /* Aumenta o tamanho do texto dos itens */
             font-size: 1em; 
-            padding: 8px 0; /* Aumenta o espaçamento entre os itens */
+            padding: 8px 0;
         }
         .status-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-right: 10px; }
         .status-minimo { background-color: #28a745; }
@@ -60,6 +75,10 @@
     </div>
 
     <div id="map">
+        <div id="logo-tamoios-mapa">
+            <img src="{{ url_for('static', filename='images/tamoios.png') }}" alt="Logo Tamoios">
+        </div>
+
         <div id="legenda-mapa">
             <h3>Status dos Sensores</h3>
             <ul id="lista-sensores-legenda"></ul>
