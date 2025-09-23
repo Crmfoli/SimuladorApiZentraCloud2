@@ -21,12 +21,7 @@
             display: inline-block;
             padding: 0.8em 1.5em;
             background-color: #28a745;
-            
-            /* CORREÇÃO DEFINITIVA: 
-              Adicionado !important para forçar a cor preta e sobrescrever qualquer outro estilo.
-            */
-            color: black !important; 
-            
+            color: black !important; /* Força a cor preta */
             text-decoration: none;
             border-radius: 5px;
             font-weight: bold;
@@ -45,8 +40,12 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Inicializa o mapa
-        var map = L.map('map').setView([-23.35, -45.75], 12);
+        // --- ALTERAÇÃO DAS COORDENADAS ---
+        // Novas coordenadas para centralizar o mapa e posicionar o marcador.
+        const sensorCoords = [-23.345, -45.71]; 
+
+        // Inicializa o mapa com a nova visão
+        var map = L.map('map').setView(sensorCoords, 13); // Aumentei um pouco o zoom para 13
 
         // Adiciona camada base do OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -54,13 +53,14 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Marcador do sensor
-        var marker = L.marker([-23.35, -45.75]).addTo(map);
+        // Marcador do sensor na nova posição
+        var marker = L.marker(sensorCoords).addTo(map);
 
-        // Popup com o botão
+        // Popup com informações
         marker.bindPopup(`
             <a href="/dashboard?device_id={{ device_id }}" class="btn-acessar">{{ device_id }}</a>
         `).openPopup();
     </script>
 </body>
 </html>
+
