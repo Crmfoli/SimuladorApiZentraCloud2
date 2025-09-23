@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Mapa de Sensores - RC Engenharia</title>
 
-    <!-- CSS do Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
     <style>
@@ -22,8 +21,7 @@
         /* Estilo do botão no popup */
         .btn-acessar {
             display: inline-block;
-            margin-top: 0.5em;
-            padding: 0.6em 1.2em;
+            padding: 0.8em 1.5em;
             background-color: #28a745;
             color: white;
             text-decoration: none;
@@ -40,13 +38,11 @@
         <h1>Localização de Sensores</h1>
     </div>
 
-    <!-- Container do mapa -->
     <div id="map"></div>
 
-    <!-- JS do Leaflet -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Inicializa o mapa (coordenadas aproximadas da Serra do Mar)
+        // Inicializa o mapa
         var map = L.map('map').setView([-23.35, -45.75], 12);
 
         // Adiciona camada base do OpenStreetMap
@@ -58,14 +54,12 @@
         // Marcador do sensor
         var marker = L.marker([-23.35, -45.75]).addTo(map);
 
-        // Popup com informações
+        // =======================================================================
+        // ALTERAÇÃO PRINCIPAL: Conteúdo do Popup foi simplificado.
+        // =======================================================================
         marker.bindPopup(`
-            <h3>Sensor de Encosta</h3>
-            <p><strong>ID do Dispositivo:</strong> {{ device_id }}</p>
-            <p><strong>Localização:</strong> Rodovia dos Tamoios (Serra do Mar)</p>
-            <p><strong>Status:</strong> <span style="color:green;">●</span> Online</p>
             <a href="/dashboard?device_id={{ device_id }}" class="btn-acessar">Ver Dados do Sensor</a>
-        `).openPopup(); // já abre o popup automaticamente
+        `).openPopup();
     </script>
 </body>
 </html>
