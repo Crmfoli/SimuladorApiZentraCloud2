@@ -6,12 +6,7 @@
     <style>
         body { font-family: sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .container { background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        .logo {
-            /* ALTERAÇÃO PRINCIPAL: Faz o logo ocupar a largura máxima do container */
-            max-width: 100%;
-            height: auto; /* Garante que a proporção da imagem seja mantida */
-            margin-bottom: 2.5em; /* Aumenta um pouco o espaçamento abaixo do logo */
-        }
+        .logo { max-width: 100%; height: auto; margin-bottom: 2.5em; }
         form { display: flex; flex-direction: column; text-align: left; }
         label { margin-bottom: 0.5em; font-weight: bold; }
         input { padding: 0.8em; margin-bottom: 1em; border: 1px solid #ccc; border-radius: 4px; }
@@ -22,20 +17,15 @@
     <div class="container">
         <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo da Empresa" class="logo">
         
-        <form action="/dashboard" method="post">
+        <form action="/mapa" method="post">
             <label for="username">E-mail de Acesso:</label>
             <input type="email" id="username" name="username" value="usuario@exemplo.com" required>
             <label for="api_token">API Token:</label>
             <input type="password" id="api_token" name="api_token" value="zcl_exemplo_token_ficticio12345" required>
             <label for="device_id">ID do Dispositivo:</label>
             <input type="text" id="device_id" name="device_id" value="SN-A7B4" required>
-            <button type="submit">Acessar Dashboard</button>
+            <button type="submit">Acessar Mapa</button>
         </form>
     </div>
 </body>
 </html>
-
-
-
-
-
