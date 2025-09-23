@@ -3,52 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <title>Mapa de Sensores - RC Engenharia</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
     <style>
         body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; }
         .header { background: #fff; padding: 1em 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 1em; }
         .logo-header { height: 40px; }
         h1 { color: #0056b3; margin: 0; font-size: 1.5em; }
-        
-        /* Container principal que segura o mapa e a caixa de info */
+
+        /* Mapa ocupa a tela abaixo do cabeçalho */
         .map-container {
-            position: relative; /* Essencial para o posicionamento da caixa de info */
-            padding: 2em;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            height: calc(100vh - 70px); /* altura da tela menos o cabeçalho */
+            width: 100%;
         }
-        .map-image {
-            /* A imagem do mapa fica no fundo */
-            display: block; 
-            max-width: 100%;
-            height: auto;
+        #map {
+            height: 100%;
+            width: 100%;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        
-        /* Caixa de informações que fica sobre a imagem */
-        .sensor-info {
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 8px;
-            padding: 1.5em;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-            position: absolute; /* Posição absoluta em relação ao map-container */
-            width: 90%;
-            max-width: 380px;
-            text-align: center;
-        }
-        .sensor-info h2 { margin-top: 0; color: #333; }
-        .sensor-info p { margin: 0.5em 0; }
+
+        /* Estilo do botão no popup */
         .btn-acessar {
             display: inline-block;
-            margin-top: 1em;
-            padding: 0.8em 1.5em;
+            margin-top: 0.5em;
+            padding: 0.6em 1.2em;
             background-color: #28a745;
             color: white;
             text-decoration: none;
             border-radius: 5px;
             font-weight: bold;
-            transition: background-color: 0.3s;
+            transition: background-color 0.3s;
         }
         .btn-acessar:hover { background-color: #218838; }
     </style>
@@ -59,19 +46,27 @@
         <h1>Localização de Sensores</h1>
     </div>
 
+    <!-- Container do mapa -->
     <div class="map-container">
-        <img src="{{ url_for('static', filename='images/mapa_tamoios.png') }}" alt="Mapa da Rodovia dos Tamoios na Serra do Mar" class="map-image">
-
-        <div class="sensor-info">
-            <h2>Sensor de Encosta</h2>
-            <p><strong>ID do Dispositivo:</strong> {{ device_id }}</p>
-            <p><strong>Localização:</strong> Rodovia dos Tamoios (Serra do Mar)</p>
-            <p><strong>Status:</strong> <span style="color: green;">●</span> Online</p>
-            
-            <a href="/dashboard?device_id={{ device_id }}" class="btn-acessar">Ver Dados do Sensor</a>
-        </div>
+        <div id="map"></div>
     </div>
-</body>
-</html>
 
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Inicializa o mapa (ajuste coordenadas conforme o local real)
+        var map = L.map('map').setView([-23.35, -45.75], 12);
 
+        // Camada do OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Adiciona marcador do sensor
+        var marker = L.marker([-23.35, -45.75]).addTo(map);
+
+        // Popup com dados do sensor (mantendo seu HTML anterior)
+        marker.bindPopup(`
+            <h3>Sensor de Encosta</h3>
+            <p><strong>ID do Disposi
