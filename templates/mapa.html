@@ -12,9 +12,8 @@
         #map { height: calc(100vh - 80px); width: 100%; }
         .leaflet-popup-content-wrapper { border-radius: 8px; }
         .leaflet-popup-content { text-align: center; }
-        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s; }
+        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color: 0.3s; }
         .btn-acessar:hover { background-color: #218838; }
-
         #logo-tamoios-mapa {
             position: absolute; top: 85px; left: 15px; z-index: 1000;
             background-color: rgba(255, 255, 255, 0.9); padding: 10px;
@@ -60,35 +59,35 @@
         // ALTERAÇÃO: Novas coordenadas e novo centro/zoom do mapa.
         // =======================================================================
         
-        // Novo centro do mapa, focado no trecho sinuoso da serra
-        var map = L.map('map').setView([-23.455, -45.63], 13);
+        // Novo centro do mapa, focado EXATAMENTE no trecho sinuoso da serra
+        var map = L.map('map').setView([-23.52, -45.57], 14); // Zoom aumentado para 14
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Novas posições dos sensores para o trecho de serra
+        // Novas posições PRECISAS dos sensores para o trecho de serra
         const sensores = [
             {
                 id: 'SN-A7B4',
                 nome: 'Sensor KM 81 (Planalto)',
-                coords: [-23.41, -45.67]
+                coords: [-23.495, -45.602]
             },
             {
                 id: 'SN-C3D9',
                 nome: 'Sensor KM 74 (Trecho de Serra)',
-                coords: [-23.44, -45.64]
+                coords: [-23.515, -45.588]
             },
             {
                 id: 'SN-F8G2',
                 nome: 'Sensor KM 68 (Trecho de Serra)',
-                coords: [-23.47, -45.62]
+                coords: [-23.530, -45.565]
             },
             {
                 id: 'SN-K1L5',
                 nome: 'Sensor KM 62 (Próximo ao Litoral)',
-                coords: [-23.50, -45.59]
+                coords: [-23.545, -45.535]
             }
         ];
 
@@ -135,4 +134,5 @@
     </script>
 </body>
 </html>
+
 
