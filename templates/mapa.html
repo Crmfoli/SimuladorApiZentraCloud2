@@ -12,15 +12,13 @@
         #map { height: calc(100vh - 80px); width: 100%; }
         .leaflet-popup-content-wrapper { border-radius: 8px; }
         .leaflet-popup-content { text-align: center; }
-        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s; }
+        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color: 0.3s; }
         .btn-acessar:hover { background-color: #218838; }
-
-        /* --- NOVOS ESTILOS PARA A LEGENDA --- */
         #legenda-mapa {
             position: absolute;
-            top: 85px; /* Abaixo do cabeçalho */
+            top: 85px;
             right: 15px;
-            z-index: 1000; /* Garante que fique sobre o mapa */
+            z-index: 1000;
             background-color: rgba(255, 255, 255, 0.9);
             padding: 10px;
             border-radius: 8px;
@@ -55,25 +53,40 @@
         var map = L.map('map').setView([-23.45, -45.60], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>' }).addTo(map);
 
+        // =======================================================================
+        // ALTERAÇÃO: Os nomes dos sensores foram atualizados para quilometragem.
+        // =======================================================================
         const sensores = [
-            { id: 'SN-A7B4', nome: 'Início da Serra', coords: [-23.345, -45.71] },
-            { id: 'SN-C3D9', nome: 'Meio da Serra (A)', coords: [-23.42, -45.66] },
-            { id: 'SN-F8G2', nome: 'Meio da Serra (B)', coords: [-23.49, -45.58] },
-            { id: 'SN-K1L5', nome: 'Fim da Serra', coords: [-23.56, -45.48] }
+            {
+                id: 'SN-A7B4',
+                nome: 'Sensor KM 81 (Planalto)',
+                coords: [-23.345, -45.71]
+            },
+            {
+                id: 'SN-C3D9',
+                nome: 'Sensor KM 74 (Trecho de Serra)',
+                coords: [-23.42, -45.66]
+            },
+            {
+                id: 'SN-F8G2',
+                nome: 'Sensor KM 68 (Trecho de Serra)',
+                coords: [-23.49, -45.58]
+            },
+            {
+                id: 'SN-K1L5',
+                nome: 'Sensor KM 62 (Próximo ao Litoral)',
+                coords: [-23.56, -45.48]
+            }
         ];
 
+        // O restante do script continua o mesmo, pois ele já lê o nome da lista
         sensores.forEach(sensor => {
             var marker = L.marker(sensor.coords).addTo(map);
             var popupContent = `<div style="text-align: center;"><h4>${sensor.nome}</h4><p style="margin: 5px 0;">ID: ${sensor.id}</p><a href="/dashboard?device_id=${sensor.id}" class="btn-acessar">Ver Dados</a></div>`;
             marker.bindPopup(popupContent);
         });
 
-        // =======================================================================
-        // LÓGICA DA LEGENDA DINÂMICA
-        // =======================================================================
         const listaLegenda = document.getElementById('lista-sensores-legenda');
-
-        // Função que calcula o risco (copiada do dashboard)
         function analisarRisco(dados) {
             const umidade = dados.umidade;
             const chuva = dados.chuva;
@@ -83,39 +96,28 @@
             if (chuva > 0.5) return { nivel: "Atenção", classe: "status-atencao" };
             return { nivel: "Mínimo", classe: "status-minimo" };
         }
-
-        // 1. Cria a estrutura inicial da legenda
+        
         sensores.forEach(sensor => {
             const li = document.createElement('li');
-            li.innerHTML = `
-                <span>${sensor.nome}</span>
-                <span id="status-${sensor.id}"><span class="status-dot"></span>Carregando...</span>
-            `;
+            li.innerHTML = `<span>${sensor.nome}</span><span id="status-${sensor.id}"><span class="status-dot"></span>Carregando...</span>`;
             listaLegenda.appendChild(li);
         });
 
-        // 2. Função que busca o status na API e atualiza a legenda
         async function atualizarLegendaStatus() {
             try {
                 const response = await fetch('/api/status_sensores');
                 const statusAtual = await response.json();
                 const risco = analisarRisco(statusAtual);
-
-                // Como na nossa simulação todos os sensores têm o mesmo clima,
-                // aplicamos o mesmo status a todos.
                 sensores.forEach(sensor => {
                     const statusEl = document.getElementById(`status-${sensor.id}`);
                     statusEl.innerHTML = `<span class="status-dot ${risco.classe}"></span>${risco.nivel}`;
                 });
-            } catch (error) {
-                console.error("Erro ao atualizar status da legenda:", error);
-            }
+            } catch (error) { console.error("Erro ao atualizar status da legenda:", error); }
         }
 
-        // 3. Inicia a atualização
         document.addEventListener('DOMContentLoaded', () => {
-            atualizarLegendaStatus(); // Busca o primeiro status
-            setInterval(atualizarLegendaStatus, 5000); // Atualiza a cada 5 segundos
+            atualizarLegendaStatus();
+            setInterval(atualizarLegendaStatus, 5000);
         });
     </script>
 </body>
