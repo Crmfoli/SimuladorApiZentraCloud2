@@ -12,13 +12,35 @@
         #map { height: calc(100vh - 80px); width: 100%; }
         .leaflet-popup-content-wrapper { border-radius: 8px; }
         .leaflet-popup-content { text-align: center; }
-        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color: 0.3s; }
+        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s; }
         .btn-acessar:hover { background-color: #218838; }
-        #legenda-mapa {
+
+        /* --- Estilos para o Logo e Legenda --- */
+        #container-legenda-logo {
             position: absolute;
-            top: 85px;
+            top: 85px; /* Abaixo do cabeçalho */
             right: 15px;
-            z-index: 1000;
+            z-index: 1000; /* Garante que fique sobre o mapa */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Alinha os itens à direita */
+            gap: 10px; /* Espaço entre o logo e a legenda */
+        }
+        .logo-tamoios {
+            max-width: 250px; /* Mesma largura da legenda para harmonizar */
+            height: auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        .logo-tamoios img {
+            max-width: 100%;
+            height: auto;
+            display: block; /* Remove espaço extra abaixo da imagem */
+        }
+
+        #legenda-mapa {
             background-color: rgba(255, 255, 255, 0.9);
             padding: 10px;
             border-radius: 8px;
@@ -42,9 +64,14 @@
     </div>
 
     <div id="map">
-        <div id="legenda-mapa">
-            <h3>Status dos Sensores</h3>
-            <ul id="lista-sensores-legenda"></ul>
+        <div id="container-legenda-logo">
+            <div class="logo-tamoios">
+                <img src="{{ url_for('static', filename='images/tamoios.png') }}" alt="Logo Tamoios">
+            </div>
+            <div id="legenda-mapa">
+                <h3>Status dos Sensores</h3>
+                <ul id="lista-sensores-legenda"></ul>
+            </div>
         </div>
     </div>
 
@@ -53,33 +80,13 @@
         var map = L.map('map').setView([-23.45, -45.60], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>' }).addTo(map);
 
-        // =======================================================================
-        // ALTERAÇÃO: Os nomes dos sensores foram atualizados para quilometragem.
-        // =======================================================================
         const sensores = [
-            {
-                id: 'SN-A7B4',
-                nome: 'Sensor KM 81 (Planalto)',
-                coords: [-23.345, -45.71]
-            },
-            {
-                id: 'SN-C3D9',
-                nome: 'Sensor KM 74 (Trecho de Serra)',
-                coords: [-23.42, -45.66]
-            },
-            {
-                id: 'SN-F8G2',
-                nome: 'Sensor KM 68 (Trecho de Serra)',
-                coords: [-23.49, -45.58]
-            },
-            {
-                id: 'SN-K1L5',
-                nome: 'Sensor KM 62 (Próximo ao Litoral)',
-                coords: [-23.56, -45.48]
-            }
+            { id: 'SN-A7B4', nome: 'Sensor KM 81 (Planalto)', coords: [-23.345, -45.71] },
+            { id: 'SN-C3D9', nome: 'Sensor KM 74 (Trecho de Serra)', coords: [-23.42, -45.66] },
+            { id: 'SN-F8G2', nome: 'Sensor KM 68 (Trecho de Serra)', coords: [-23.49, -45.58] },
+            { id: 'SN-K1L5', nome: 'Sensor KM 62 (Próximo ao Litoral)', coords: [-23.56, -45.48] }
         ];
 
-        // O restante do script continua o mesmo, pois ele já lê o nome da lista
         sensores.forEach(sensor => {
             var marker = L.marker(sensor.coords).addTo(map);
             var popupContent = `<div style="text-align: center;"><h4>${sensor.nome}</h4><p style="margin: 5px 0;">ID: ${sensor.id}</p><a href="/dashboard?device_id=${sensor.id}" class="btn-acessar">Ver Dados</a></div>`;
