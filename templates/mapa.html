@@ -24,26 +24,21 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         
-        /* Caixa de informações que fica sobre a imagem */
+        /* Apenas o botão verde central */
         .sensor-info {
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 8px;
-            padding: 2em; /* Um pouco mais de preenchimento para destacar o botão */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
             position: absolute;
             text-align: center;
         }
         
-        /* Botão principal que agora contém a informação */
         .btn-acessar {
             display: inline-block;
-            padding: 1em 2em; /* Botão maior */
+            padding: 1em 2em;
             background-color: #28a745;
             color: white;
             text-decoration: none;
             border-radius: 5px;
             font-weight: bold;
-            font-size: 1.2em; /* Fonte maior */
+            font-size: 1.2em;
             transition: background-color 0.3s;
         }
         .btn-acessar:hover { background-color: #218838; }
@@ -58,15 +53,10 @@
     <div class="map-container">
         <img src="{{ url_for('static', filename='images/mapa_tamoios.png') }}" alt="Mapa da Rodovia dos Tamoios na Serra do Mar" class="map-image">
 
+        <!-- Só o botão verde -->
         <div class="sensor-info">
             <a href="/dashboard?device_id={{ device_id }}" class="btn-acessar">Sensor de Encosta</a>
         </div>
     </div>
 </body>
 </html>
-
-
-
-
-
-
