@@ -12,18 +12,17 @@
         .logo-header { height: 40px; }
         h1 { color: #0056b3; margin: 0; font-size: 1.5em; }
 
-        /* Mapa precisa ter altura definida */
         #map {
-            height: calc(100vh - 80px); /* ocupa a tela menos o cabeçalho */
+            height: calc(100vh - 80px);
             width: 100%;
         }
 
-        /* Estilo do botão no popup */
         .btn-acessar {
             display: inline-block;
             padding: 0.8em 1.5em;
             background-color: #28a745;
-            color: white;
+            /* Cor do texto preta, como solicitado */
+            color: black; 
             text-decoration: none;
             border-radius: 5px;
             font-weight: bold;
@@ -54,11 +53,9 @@
         // Marcador do sensor
         var marker = L.marker([-23.35, -45.75]).addTo(map);
 
-        // =======================================================================
-        // ALTERAÇÃO PRINCIPAL: Conteúdo do Popup foi simplificado.
-        // =======================================================================
+        // Popup com informações
         marker.bindPopup(`
-            <a href="/dashboard?device_id={{ device_id }}" class="btn-acessar">Ver Dados do Sensor</a>
+            <a href="/dashboard?device_id={{ device_id }}" class="btn-acessar">{{ device_id }}</a>
         `).openPopup();
     </script>
 </body>
