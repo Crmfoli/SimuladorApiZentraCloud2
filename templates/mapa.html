@@ -9,7 +9,6 @@
         .logo-header { height: 40px; }
         h1 { color: #0056b3; margin: 0; font-size: 1.5em; }
         
-        /* --- CSS ATUALIZADO PARA O MAPA E O PINO --- */
         .map-container {
             position: absolute;
             top: 65px; /* Altura do cabeçalho */
@@ -17,6 +16,7 @@
             right: 0;
             bottom: 0;
             overflow: hidden;
+            background-color: #e0e0e0; /* Cor de fundo enquanto o mapa carrega */
         }
         .map-iframe {
             width: 100%;
@@ -24,10 +24,8 @@
             border: none;
         }
         
-        /* Estilo do pino do sensor */
         .sensor-marker {
             position: absolute;
-            /* Posicione o pino no mapa. Ajuste top/left para mover. */
             top: 55%; 
             left: 48%;
             transform: translate(-50%, -50%);
@@ -39,7 +37,6 @@
             text-decoration: none;
         }
 
-        /* A bolinha vermelha que pulsa */
         .sensor-marker .dot {
             width: 20px;
             height: 20px;
@@ -50,7 +47,6 @@
             animation: pulse 1.5s infinite;
         }
         
-        /* O texto abaixo da bolinha */
         .sensor-marker .label {
             margin-top: 8px;
             padding: 5px 10px;
@@ -58,23 +54,13 @@
             color: white;
             border-radius: 5px;
             font-size: 14px;
-            white-space: nowrap; /* Impede que o texto quebre a linha */
+            white-space: nowrap;
         }
 
-        /* Animação de pulso para chamar atenção */
         @keyframes pulse {
-            0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
-            }
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
-            }
-            100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
-            }
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
         }
     </style>
 </head>
@@ -85,11 +71,11 @@
     </div>
 
     <div class="map-container">
-        <iframe 
-            src="http://googleusercontent.com/maps.google.com/4" 
-            class="map-iframe" 
-            allowfullscreen="" 
-            loading="lazy" 
+        <iframe
+            src="http://googleusercontent.com/maps.google.com/6"
+            class="map-iframe"
+            allowfullscreen=""
+            loading="lazy"
             referrerpolicy="no-referrer-when-downgrade">
         </iframe>
 
