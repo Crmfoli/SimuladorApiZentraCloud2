@@ -19,15 +19,16 @@
         th, td { padding: 0.7em; text-align: left; border-bottom: 1px solid #ddd; font-size: 0.9em; }
         th { background-color: #007bff; color: white; }
 
-        /* --- NOVOS ESTILOS PARA O CARD DE RISCO --- */
+        /* --- ESTILOS ATUALIZADOS PARA O CARD DE RISCO --- */
         .risk-card { text-align: center; }
-        .risk-status { padding: 1.5em; border-radius: 8px; margin-top: 1em; transition: background-color 0.5s ease; }
-        .risk-status span { font-size: 2em; font-weight: bold; }
+        .risk-status { padding: 1em; border-radius: 8px; margin-top: 1em; transition: all 0.5s ease; }
+        .risk-status span { font-size: 1.8em; font-weight: bold; }
         .risk-description { margin-top: 1em; font-size: 0.9em; color: #555; min-height: 2.2em; }
-        /* Cores do status */
-        .status-baixo { background-color: #d4edda; color: #155724; }
-        .status-moderado { background-color: #fff3cd; color: #856404; }
-        .status-alto { background-color: #f8d7da; color: #721c24; }
+        /* Novas cores e nomes de status */
+        .status-minimo { background-color: #d4edda; color: #155724; }
+        .status-atencao { background-color: #fff3cd; color: #856404; }
+        .status-alerta { background-color: #ffe0b3; color: #b35f00; }
+        .status-iminente { background-color: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
@@ -47,7 +48,7 @@
         </div>
         <div class="data-table-container">
             <div class="card risk-card">
-                <h2>Análise de Risco</h2>
+                <h2>Risco de Deslizamento</h2>
                 <div id="risk-display" class="risk-status">
                     <span id="risk-level">--</span>
                 </div>
@@ -58,13 +59,12 @@
     </div>
 
     <script>
-        let umidadeChart, temperaturaChart, chuvaChart;
-        let updateInterval;
+        let umidadeChart, temperaturaChart, chuvaChart, updateInterval;
         const MAX_LINHAS_TABELA = 15;
         const MAX_PONTOS_GRAFICO = 30;
 
         // =======================================================================
-        // NOVA FUNÇÃO: Realiza a análise de risco com base na última leitura.
+        // NOVA FUNÇÃO: Lógica e descrições focadas em risco de deslizamento.
         // =======================================================================
         function analisarEAtualizarRisco(leitura) {
             if (!leitura) return;
@@ -72,102 +72,75 @@
             const chuva = leitura.chuva;
             let nivel, descricao, classe;
 
-            if (umidade > 45 && chuva > 1.0) {
-                nivel = "Alto";
-                descricao = "Solo saturado com chuva. Risco de encharcamento.";
-                classe = "status-alto";
+            if (umidade > 48 && chuva > 3.0) {
+                nivel = "IMINENTE";
+                descricao = "Chuva intensa sobre solo saturado. Risco máximo de deslizamento.";
+                classe = "status-iminente";
             } else if (umidade > 50) {
-                nivel = "Alto";
-                descricao = "Umidade do solo extremamente alta. Risco de doenças.";
-                classe = "status-alto";
-            } else if (umidade < 25 && chuva === 0) {
-                nivel = "Moderado";
-                descricao = "Solo secando e sem chuva. Risco de estresse hídrico.";
-                classe = "status-moderado";
-            } else if (umidade > 40) {
-                nivel = "Moderado";
-                descricao = "Solo muito úmido. Atenção com chuvas futuras.";
-                classe = "status-moderado";
+                nivel = "ALERTA";
+                descricao = "Chuva parou, mas o solo permanece extremamente instável e saturado.";
+                classe = "status-alerta";
+            } else if (chuva > 5.0) { // Limiar de chuva forte
+                nivel = "ALERTA";
+                descricao = "Chuva forte contínua. Saturação do solo aumentando rapidamente.";
+                classe = "status-alerta";
+            } else if (chuva > 0.5) { // Limiar de chuva moderada
+                nivel = "ATENÇÃO";
+                descricao = "Chuva moderada. Monitorar a evolução da umidade do solo.";
+                classe = "status-atencao";
             } else {
-                nivel = "Baixo";
-                descricao = "Condições ideais.";
-                classe = "status-baixo";
+                nivel = "Mínimo";
+                descricao = "Condições estáveis. Sem risco aparente de deslizamento.";
+                classe = "status-minimo";
             }
             document.getElementById('risk-level').textContent = nivel;
             document.getElementById('risk-description').textContent = descricao;
             document.getElementById('risk-display').className = 'risk-status ' + classe;
         }
 
+        // O restante do JavaScript permanece o mesmo, mas incluído aqui para garantir.
         function renderizarDashboard(dados) {
             destruirGraficos();
             const labels = dados.map(d => d.timestamp_grafico);
             umidadeChart = criarGrafico('umidadeChart', 'Umidade', labels, dados.map(d => d.umidade), 'rgba(54, 162, 235, 1)');
             temperaturaChart = criarGrafico('temperaturaChart', 'Temperatura', labels, dados.map(d => d.temperatura), 'rgba(255, 99, 132, 1)');
             chuvaChart = criarGrafico('chuvaChart', 'Chuva', labels, dados.map(d => d.chuva), 'rgba(75, 192, 192, 1)');
-
             const tbody = document.getElementById('tabela-dados');
             tbody.innerHTML = '';
             dados.slice(-MAX_LINHAS_TABELA).reverse().forEach(leitura => {
                 const newRow = tbody.insertRow(0);
                 newRow.innerHTML = `<td>${leitura.timestamp_completo}</td><td>${leitura.umidade}</td><td>${leitura.temperatura}</td><td>${leitura.chuva}</td>`;
             });
-
-            // ATUALIZAÇÃO: Calcula o risco com o dado mais recente da carga inicial
             if (dados && dados.length > 0) {
                 analisarEAtualizarRisco(dados[dados.length - 1]);
             }
         }
-        
         async function buscarAtualizacao() {
              try {
                 const response = await fetch('/api/dados_atuais');
                 if (!response.ok) return;
                 const novaLeitura = await response.json();
-                
-                // Atualiza a tabela
                 const tbody = document.getElementById('tabela-dados');
                 const newRow = tbody.insertRow(0);
                 newRow.innerHTML = `<td>${novaLeitura.timestamp_completo}</td><td>${novaLeitura.umidade}</td><td>${novaLeitura.temperatura}</td><td>${novaLeitura.chuva}</td>`;
-                while (tbody.rows.length > MAX_LINHAS_TABELA) {
-                    tbody.deleteRow(tbody.rows.length - 1);
-                }
-
-                // Atualiza os gráficos
+                while (tbody.rows.length > MAX_LINHAS_TABELA) { tbody.deleteRow(tbody.rows.length - 1); }
                 const charts = [umidadeChart, temperaturaChart, chuvaChart];
-                charts.forEach(chart => {
-                    if(chart) {
-                        chart.data.labels.push(novaLeitura.timestamp_grafico);
-                        if (chart.data.labels.length > MAX_PONTOS_GRAFICO) chart.data.labels.shift();
-                    }
-                });
+                charts.forEach(chart => { if(chart) { chart.data.labels.push(novaLeitura.timestamp_grafico); if (chart.data.labels.length > MAX_PONTOS_GRAFICO) chart.data.labels.shift(); } });
                 umidadeChart.data.datasets[0].data.push(novaLeitura.umidade);
                 temperaturaChart.data.datasets[0].data.push(novaLeitura.temperatura);
                 chuvaChart.data.datasets[0].data.push(novaLeitura.chuva);
-                charts.forEach(chart => {
-                    if(chart && chart.data.datasets[0].data.length > MAX_PONTOS_GRAFICO) chart.data.datasets[0].data.shift();
-                    if(chart) chart.update();
-                });
-
-                // ATUALIZAÇÃO: Recalcula o risco com o novo dado
+                charts.forEach(chart => { if(chart && chart.data.datasets[0].data.length > MAX_PONTOS_GRAFICO) chart.data.datasets[0].data.shift(); if(chart) chart.update(); });
                 analisarEAtualizarRisco(novaLeitura);
-
-            } catch (error) {
-                console.error("Erro na atualização em tempo real:", error);
-            }
+            } catch (error) { console.error("Erro na atualização em tempo real:", error); }
         }
-        
-        // O restante das funções (sem alterações)
         async function carregarDados(mes = '') {
             try {
                 const response = await fetch(`/api/dados?month=${mes}`);
                 if (!response.ok) throw new Error('Falha ao buscar dados');
                 const dados = await response.json();
                 renderizarDashboard(dados);
-
                 if (updateInterval) clearInterval(updateInterval);
-                if (mes === '') {
-                    updateInterval = setInterval(buscarAtualizacao, 5000);
-                }
+                if (mes === '') { updateInterval = setInterval(buscarAtualizacao, 2000); } // Deixei em 2 segundos
             } catch (error) { console.error("Erro ao carregar dados:", error); }
         }
         async function popularSeletorDeMeses() {
@@ -177,31 +150,18 @@
                 const meses = await response.json();
                 const seletor = document.getElementById('month-selector');
                 seletor.innerHTML = '<option value="">Tempo Real / Últimos Dados</option>';
-                meses.forEach(mes => {
-                    const option = document.createElement('option');
-                    option.value = mes;
-                    option.textContent = mes;
-                    seletor.appendChild(option);
-                });
+                meses.forEach(mes => { const option = document.createElement('option'); option.value = mes; option.textContent = mes; seletor.appendChild(option); });
             } catch (error) { console.error("Erro ao popular seletor de meses:", error); }
         }
-        function criarGrafico(canvasId, label, labels, data, color) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            return new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: label, data: data, borderColor: color, tension: 0.1 }] } });
-        }
-        function destruirGraficos() {
-            if (umidadeChart) umidadeChart.destroy();
-            if (temperaturaChart) temperaturaChart.destroy();
-            if (chuvaChart) chuvaChart.destroy();
-        }
+        function criarGrafico(canvasId, label, labels, data, color) { const ctx = document.getElementById(canvasId).getContext('2d'); return new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: label, data: data, borderColor: color, tension: 0.1 }] } }); }
+        function destruirGraficos() { if (umidadeChart) umidadeChart.destroy(); if (temperaturaChart) temperaturaChart.destroy(); if (chuvaChart) chuvaChart.destroy(); }
         document.addEventListener('DOMContentLoaded', () => {
             popularSeletorDeMeses();
             carregarDados();
-            document.getElementById('month-selector').addEventListener('change', (event) => {
-                carregarDados(event.target.value);
-            });
+            document.getElementById('month-selector').addEventListener('change', (event) => { carregarDados(event.target.value); });
         });
     </script>
 </body>
 </html>
+
 
