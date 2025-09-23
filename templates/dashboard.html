@@ -17,7 +17,7 @@
         .data-table-container { flex: 2; min-width: 400px; display: flex; flex-direction: column; gap: 1.5em; }
         .card { background: #fff; padding: 1.5em; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 0.5em; margin-top: 0; font-size: 1.2em; }
-        /* NOVO: Estilo para o placar de cálculos */
+        /* Estilo para o placar de cálculo da chuva */
         .placar-calculos { text-align: center; color: #2a9d8f; font-size: 1.1em; font-weight: bold; margin-top: -0.5em; margin-bottom: 1em; }
         .risk-card { text-align: center; }
         .risk-status { padding: 1em; border-radius: 8px; margin-top: 1em; transition: all 0.5s ease; }
@@ -48,17 +48,15 @@
         <div class="chart-grid">
             <div class="card">
                 <h2>Umidade do Solo (%)</h2>
-                <h3 class="placar-calculos" id="calc-umidade">Soma: -- | Média: --</h3>
                 <canvas id="umidadeChart"></canvas>
             </div>
             <div class="card">
                 <h2>Temperatura do Solo (°C)</h2>
-                <h3 class="placar-calculos" id="calc-temperatura">Soma: -- | Média: --</h3>
                 <canvas id="temperaturaChart"></canvas>
             </div>
             <div class="card" style="grid-column: 1 / -1;">
                 <h2>Precipitação (mm)</h2>
-                <h3 class="placar-calculos" id="calc-chuva">Soma: -- | Média: --</h3>
+                <h3 class="placar-calculos" id="calc-chuva">Acumulado (72h): -- mm</h3>
                 <canvas id="chuvaChart"></canvas>
             </div>
         </div>
@@ -73,18 +71,16 @@
         const MAX_LINHAS_TABELA = 15;
         const MAX_PONTOS_GRAFICO = 30;
 
-        // --- NOVA FUNÇÃO: Calcula e exibe a Soma e a Média Móvel ---
-        function calcularEAtualizarSomaEMedia() {
-            const charts = { umidade: umidadeChart, temperatura: temperaturaChart, chuva: chuvaChart };
-            for (const [key, chart] of Object.entries(charts)) {
-                if (chart) {
-                    const dataPoints = chart.data.datasets[0].data;
-                    const ultimos10Pontos = dataPoints.slice(-10);
-                    if (ultimos10Pontos.length > 0) {
-                        const soma = ultimos10Pontos.reduce((total, valor) => total + valor, 0);
-                        const media = soma / ultimos10Pontos.length;
-                        document.getElementById(`calc-${key}`).textContent = `Soma: ${soma.toFixed(2)} | Média: ${media.toFixed(2)}`;
-                    }
+        // --- FUNÇÃO DE CÁLCULO ATUALIZADA ---
+        // Agora calcula e atualiza apenas a soma da chuva.
+        function calcularEAtualizarSomaChuva() {
+            if (chuvaChart) {
+                const dataPoints = chuvaChart.data.datasets[0].data;
+                const ultimos10Pontos = dataPoints.slice(-10);
+                if (ultimos10Pontos.length > 0) {
+                    const soma = ultimos10Pontos.reduce((total, valor) => total + valor, 0);
+                    // Atualiza o placar com o novo texto e a soma calculada
+                    document.getElementById('calc-chuva').textContent = `Acumulado (72h): ${soma.toFixed(2)} mm`;
                 }
             }
         }
@@ -107,8 +103,8 @@
 
             if (dados && dados.length > 0) {
                 analisarEAtualizarRisco(dados[dados.length - 1]);
-                // Calcula os valores iniciais
-                calcularEAtualizarSomaEMedia();
+                // Chamada para a nova função de cálculo
+                calcularEAtualizarSomaChuva();
             }
         }
         
@@ -137,8 +133,8 @@
                 }
                 
                 analisarEAtualizarRisco(novaLeitura);
-                // Recalcula os valores a cada atualização
-                calcularEAtualizarSomaEMedia();
+                // Recalcula o valor a cada atualização
+                calcularEAtualizarSomaChuva();
 
             } catch (error) { console.error("Erro na atualização em tempo real:", error); }
         }
@@ -154,5 +150,3 @@
     </script>
 </body>
 </html>
-
-
