@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
 # ===================================================================================
-#   SIMULADOR WEB (VERSÃO 12.3 - CORREÇÃO FINAL DE PROCESSAMENTO DE DATAS)
+#   SIMULADOR WEB (VERSÃO 12.4 - VERSÃO FINAL ROBUSTA)
 #
-#   - Corrige o 'FutureWarning' do Pandas (H -> h).
-#   - Adiciona tratamento de erro (try...except) às rotas de API para evitar crashes.
+#   - Simplifica a geração de dados históricos para evitar falhas.
+#   - Garante que todas as operações com arquivos e datas sejam seguras.
 # ===================================================================================
 
 import os
 import random
 from datetime import datetime
 from zoneinfo import ZoneInfo
-import traceback  # Importa a biblioteca para logar erros detalhados
+import traceback
 
 import pandas as pd
 from flask import Flask, jsonify, render_template, request
@@ -26,35 +26,49 @@ DATA_FILE = os.path.join(DATA_DIR, "dados_sensores.csv")
 # --- FUNÇÕES DE MANIPULAÇÃO DE DADOS ---
 
 def create_initial_data_file():
-    """Cria o arquivo CSV com dados históricos se ele não existir."""
-    print(f"Arquivo de dados não encontrado. Criando novo em {DATA_FILE}...")
-    
-    # CORREÇÃO 1: Trocamos '1H' por 'h' para seguir a nova convenção do Pandas.
-    hora_inicial = datetime.now(TZ_BRASILIA) - pd.DateOffset(months=3)
-    timestamps = pd.to_datetime(pd.date_range(start=hora_inicial, end=datetime.now(TZ_BRASILIA), freq="h"))
-    
-    dados = []
-    for ts in timestamps:
-        dados.append({
-            "timestamp": ts,
-            "umidade": round(random.uniform(20.0, 50.0), 2),
-            "temperatura": round(random.uniform(15.0, 35.0), 2),
-            "chuva": round(random.uniform(0.0, 5.0), 2) if random.random() > 0.8 else 0.0
-        })
-    df = pd.DataFrame(dados)
-    df.to_csv(DATA_FILE, index=False)
-    print("Arquivo de dados criado com sucesso.")
+    """Cria o arquivo CSV com dados históricos de forma segura."""
+    try:
+        print(f"Arquivo de dados não encontrado. Criando novo em {DATA_FILE}...")
+        
+        # Lógica de data simplificada e mais robusta
+        end_date = datetime.now(TZ_BRASILIA)
+        start_date = end_date - pd.DateOffset(months=3)
+        
+        # Usamos pd.Timestamp para garantir compatibilidade
+        timestamps = pd.date_range(start=pd.Timestamp(start_date), end=pd.Timestamp(end_date), freq="h")
+        
+        dados = []
+        for ts in timestamps:
+            dados.append({
+                "timestamp": ts,
+                "umidade": round(random.uniform(20.0, 50.0), 2),
+                "temperatura": round(random.uniform(15.0, 35.0), 2),
+                "chuva": round(random.uniform(0.0, 5.0), 2) if random.random() > 0.8 else 0.0
+            })
+        
+        df = pd.DataFrame(dados)
+        df.to_csv(DATA_FILE, index=False)
+        print("Arquivo de dados criado com sucesso.")
+    except Exception as e:
+        # Se qualquer coisa der errado aqui, veremos o erro detalhado nos logs do Render
+        print("!!!!!!!!!!! FALHA CRÍTICA AO CRIAR ARQUIVO DE DADOS INICIAL !!!!!!!!!!!")
+        print(traceback.format_exc())
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
 
 def ler_dados_do_csv():
-    """Lê o arquivo CSV. Se o arquivo não existir, chama a função para criá-lo primeiro."""
+    """Lê o arquivo CSV. Se não existir, chama a função para criá-lo."""
     if not os.path.exists(DATA_FILE):
         create_initial_data_file()
+    
+    # Verifica novamente, pois a criação pode ter falhado
     if not os.path.exists(DATA_FILE):
         return pd.DataFrame()
+        
     return pd.read_csv(DATA_FILE, parse_dates=['timestamp'])
 
 def salvar_nova_leitura(leitura):
-    """Adiciona uma nova linha de leitura ao final do arquivo CSV."""
+    """Adiciona uma nova linha ao arquivo CSV."""
     df_leitura = pd.DataFrame([leitura])
     df_leitura.to_csv(DATA_FILE, mode='a', header=False, index=False)
 
@@ -82,6 +96,8 @@ def api_dados():
             df_filtrado = df[df['timestamp'].dt.strftime('%Y-%m') == mes_selecionado]
         else:
             df_filtrado = df.tail(30)
+        
+        # Converte o DataFrame filtrado para o formato JSON esperado
         dados_formatados = []
         for _, row in df_filtrado.iterrows():
             dados_formatados.append({
@@ -114,22 +130,16 @@ def api_dados_atuais():
         print(f"Erro na rota /api/dados_atuais: {traceback.format_exc()}")
         return jsonify({"error": "Erro interno ao gerar novo dado"}), 500
 
-# =======================================================================
-# CORREÇÃO 2: Adicionamos um bloco try...except para tornar a API mais robusta.
-# =======================================================================
 @app.route('/api/meses_disponiveis')
 def api_meses_disponiveis():
     try:
         df = ler_dados_do_csv()
-        if df.empty:
-            return jsonify([])
+        if df.empty: return jsonify([])
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         meses = df['timestamp'].dt.strftime('%Y-%m').unique().tolist()
         meses.reverse()
         return jsonify(meses)
     except Exception:
-        # Se ocorrer qualquer erro aqui dentro, ele será logado e uma resposta de erro será enviada.
-        # Isso impede que o servidor inteiro trave.
         print(f"Erro na rota /api/meses_disponiveis: {traceback.format_exc()}")
         return jsonify({"error": "Erro interno ao buscar meses"}), 500
 
