@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 
 # ===================================================================================
-#   SIMULADOR WEB (VERSÃO 15.0 - SIMULAÇÃO DE DADOS INTELIGENTE)
+#   SIMULADOR WEB (VERSÃO 15.1 - FOCO EM RISCO DE DESLIZAMENTO)
 #
-#   - Gera dados de forma dinâmica para simular ciclos de tempo (seca, chuva, saturação).
-#   - Permite a visualização de todos os níveis de risco em um curto período.
+#   - Aumenta a intensidade da chuva simulada para testar os limites da análise de risco.
 # ===================================================================================
 
 import os
 import random
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, jsonify, render_template, request
 import pandas as pd
@@ -28,57 +27,48 @@ engine = create_engine(DATABASE_URL)
 def gerar_leitura_baseada_no_tempo(timestamp):
     """Gera uma leitura de sensor com base no minuto do timestamp fornecido."""
     minuto = timestamp.minute
-
     umidade, temperatura, chuva = 0, 0, 0
 
     # CICLO DE TEMPO:
-    # Minutos 0-19: Período de seca
-    if 0 <= minuto < 20:
-        # Umidade começa em 35% e cai para 20%
+    if 0 <= minuto < 20: # Período de seca
         umidade = 35.0 - (minuto * 0.75)
-        temperatura = 25.0 + (minuto * 0.2) # Temperatura sobe um pouco
+        temperatura = 25.0 + (minuto * 0.2)
         chuva = 0.0
-    # Minutos 20-39: Período de chuva intensa
-    elif 20 <= minuto < 40:
-        # Umidade sobe de 20% para 55%
-        umidade = 20.0 + ((minuto - 20) * 1.75)
-        temperatura = 29.0 - ((minuto - 20) * 0.3) # Temperatura cai com a chuva
-        chuva = random.uniform(1.0, 5.0)
-    # Minutos 40-59: Período pós-chuva (solo saturado)
-    else:
-        # Umidade começa em 55% e cai lentamente
-        umidade = 55.0 - ((minuto - 40) * 1.0)
-        temperatura = 23.0 + ((minuto - 40) * 0.1) # Temperatura se recupera devagar
+    elif 20 <= minuto < 40: # Período de chuva intensa
+        umidade = 20.0 + ((minuto - 20) * 2.0) # Umidade sobe mais rápido
+        temperatura = 29.0 - ((minuto - 20) * 0.3)
+        # ALTERAÇÃO PRINCIPAL: Chuva muito mais forte (valores em mm/hora)
+        chuva = random.uniform(5.0, 25.0) 
+    else: # Período pós-chuva (solo saturado)
+        umidade = 60.0 - ((minuto - 40) * 1.0) # Começa de um ponto mais alto
+        temperatura = 23.0 + ((minuto - 40) * 0.1)
         chuva = 0.0
     
-    # Adiciona um pouco de variação aleatória para não ser uma linha perfeita
     umidade += random.uniform(-1.5, 1.5)
     temperatura += random.uniform(-1.0, 1.0)
 
     return {
         "timestamp": timestamp,
-        "umidade": round(max(10, min(60, umidade)), 2), # Garante que os valores fiquem em uma faixa
+        "umidade": round(max(10, min(70, umidade)), 2), # Aumentado o limite máximo
         "temperatura": round(temperatura, 2),
         "chuva": round(chuva, 2)
     }
 
+# O restante do arquivo Python permanece o mesmo da versão anterior.
+# Para garantir, aqui está o código completo.
+
 def create_initial_data_file():
-    """Cria a tabela com dados históricos que seguem o ciclo de tempo."""
     try:
         print("Criando tabela com dados históricos inteligentes...")
         hora_atual = datetime.now(TZ_BRASILIA)
         total_horas = 30 * 24
-        
         dados = []
         for i in range(total_horas):
             ts = hora_atual - timedelta(hours=i)
             leitura = gerar_leitura_baseada_no_tempo(ts)
-            # Formata para inserção no banco de dados
             dados.append(f"('{leitura['timestamp']}', {leitura['umidade']}, {leitura['temperatura']}, {leitura['chuva']})")
-        
         dados.reverse()
         values_sql = ", ".join(dados)
-        
         with engine.connect() as connection:
             connection.execute(text("""CREATE TABLE leituras (id SERIAL PRIMARY KEY, timestamp TIMESTAMPTZ NOT NULL, umidade FLOAT NOT NULL, temperatura FLOAT NOT NULL, chuva FLOAT NOT NULL);"""))
             connection.execute(text(f"INSERT INTO leituras (timestamp, umidade, temperatura, chuva) VALUES {values_sql};"))
@@ -88,27 +78,21 @@ def create_initial_data_file():
         print(f"FALHA CRÍTICA AO CRIAR TABELA: {traceback.format_exc()}")
 
 def ler_dados_do_db():
-    """Lê dados do banco, garantindo que a tabela exista."""
     try:
         with engine.connect() as connection:
             inspector = inspect(connection)
             if not inspector.has_table('leituras'):
                 create_initial_data_file()
-            
-            # Retorna o DataFrame lendo a tabela inteira
             return pd.read_sql_table('leituras', connection, parse_dates=['timestamp'])
     except Exception:
-        print(f"Erro ao ler do banco de dados: {traceback.format_exc()}")
-        return pd.DataFrame() # Retorna um DataFrame vazio em caso de erro
+        print(f"Erro ao ler do banco de dados: {traceback.format_exc()}"); return pd.DataFrame()
 
 def salvar_nova_leitura_no_db(leitura):
-    """Salva uma nova leitura no banco de dados."""
     with engine.connect() as connection:
         query = text("INSERT INTO leituras (timestamp, umidade, temperatura, chuva) VALUES (:ts, :u, :t, :c)")
         connection.execute(query, {"ts": leitura['timestamp'], "u": leitura['umidade'], "t": leitura['temperatura'], "c": leitura['chuva']})
         connection.commit()
 
-# --- ROTAS DA APLICAÇÃO ---
 @app.route('/')
 def pagina_de_acesso(): return render_template('index.html')
 
@@ -117,12 +101,10 @@ def pagina_dashboard():
     device_id = request.form['device_id']
     return render_template('dashboard.html', device_id=device_id)
 
-# --- ROTAS DE API ---
 @app.route('/api/dados')
 def api_dados():
     try:
         df = ler_dados_do_db()
-        # ... (Resto do código sem alterações)
         if df.empty: return jsonify([])
         mes_selecionado = request.args.get('month')
         if mes_selecionado:
@@ -136,7 +118,6 @@ def api_dados():
 
 @app.route('/api/dados_atuais')
 def api_dados_atuais():
-    """Gera, SALVA e retorna uma nova leitura inteligente."""
     try:
         nova_leitura = gerar_leitura_baseada_no_tempo(datetime.now(TZ_BRASILIA))
         salvar_nova_leitura_no_db(nova_leitura)
@@ -155,4 +136,5 @@ def api_meses_disponiveis():
         return jsonify(meses)
     except Exception:
         print(f"Erro na rota /api/meses_disponiveis: {traceback.format_exc()}"); return jsonify({"error": "Erro interno"}), 500
+
 
