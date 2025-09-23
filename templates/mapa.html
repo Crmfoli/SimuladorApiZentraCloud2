@@ -12,7 +12,7 @@
         #map { height: calc(100vh - 80px); width: 100%; }
         .leaflet-popup-content-wrapper { border-radius: 8px; }
         .leaflet-popup-content { text-align: center; }
-        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color: 0.3s; }
+        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s; }
         .btn-acessar:hover { background-color: #218838; }
         #logo-tamoios-mapa {
             position: absolute; top: 85px; left: 15px; z-index: 1000;
@@ -56,38 +56,38 @@
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
         // =======================================================================
-        // ALTERAÇÃO: Novas coordenadas e novo centro/zoom do mapa.
+        // ALTERAÇÃO PRECISA: Novo centro e zoom para focar na área de interesse.
         // =======================================================================
-        
-        // Novo centro do mapa, focado EXATAMENTE no trecho sinuoso da serra
-        var map = L.map('map').setView([-23.52, -45.57], 14); // Zoom aumentado para 14
+        var map = L.map('map').setView([-23.53, -45.575], 15); // Zoom aumentado para 15 para máximo detalhe
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Novas posições PRECISAS dos sensores para o trecho de serra
+        // =======================================================================
+        // ALTERAÇÃO PRECISA: Novas coordenadas exatas dos sensores.
+        // =======================================================================
         const sensores = [
             {
                 id: 'SN-A7B4',
                 nome: 'Sensor KM 81 (Planalto)',
-                coords: [-23.495, -45.602]
+                coords: [-23.5255, -45.5785]
             },
             {
                 id: 'SN-C3D9',
                 nome: 'Sensor KM 74 (Trecho de Serra)',
-                coords: [-23.515, -45.588]
+                coords: [-23.5311, -45.5695]
             },
             {
                 id: 'SN-F8G2',
                 nome: 'Sensor KM 68 (Trecho de Serra)',
-                coords: [-23.530, -45.565]
+                coords: [-23.5393, -45.5620]
             },
             {
                 id: 'SN-K1L5',
                 nome: 'Sensor KM 62 (Próximo ao Litoral)',
-                coords: [-23.545, -45.535]
+                coords: [-23.5480, -45.5535]
             }
         ];
 
@@ -134,5 +134,6 @@
     </script>
 </body>
 </html>
+
 
 
