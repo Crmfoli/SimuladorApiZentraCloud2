@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Mapa de Sensores - RC Engenharia</title>
 
-    <!-- Leaflet CSS -->
+    <!-- CSS do Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
     <style>
@@ -13,16 +13,10 @@
         .logo-header { height: 40px; }
         h1 { color: #0056b3; margin: 0; font-size: 1.5em; }
 
-        /* Mapa ocupa a tela abaixo do cabeçalho */
-        .map-container {
-            height: calc(100vh - 70px); /* altura da tela menos o cabeçalho */
-            width: 100%;
-        }
+        /* Mapa precisa ter altura definida */
         #map {
-            height: 100%;
+            height: calc(100vh - 80px); /* ocupa a tela menos o cabeçalho */
             width: 100%;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         /* Estilo do botão no popup */
@@ -47,26 +41,33 @@
     </div>
 
     <!-- Container do mapa -->
-    <div class="map-container">
-        <div id="map"></div>
-    </div>
+    <div id="map"></div>
 
-    <!-- Leaflet JS -->
+    <!-- JS do Leaflet -->
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Inicializa o mapa (ajuste coordenadas conforme o local real)
+        // Inicializa o mapa (coordenadas aproximadas da Serra do Mar)
         var map = L.map('map').setView([-23.35, -45.75], 12);
 
-        // Camada do OpenStreetMap
+        // Adiciona camada base do OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            attribution: '&copy; OpenStreetMap contributors'
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Adiciona marcador do sensor
+        // Marcador do sensor
         var marker = L.marker([-23.35, -45.75]).addTo(map);
 
-        // Popup com dados do sensor (mantendo seu HTML anterior)
+        // Popup com informações
         marker.bindPopup(`
             <h3>Sensor de Encosta</h3>
-            <p><strong>ID do Disposi
+            <p><strong>ID do Dispositivo:</strong> {{ device_id }}</p>
+            <p><strong>Localização:</strong> Rodovia dos Tamoios (Serra do Mar)</p>
+            <p><strong>Status:</strong> <span style="color:green;">●</span> Online</p>
+            <a href="/dashboard?device_id={{ device_id }}" class="btn-acessar">Ver Dados do Sensor</a>
+        `).openPopup(); // já abre o popup automaticamente
+    </script>
+</body>
+</html>
+
+
