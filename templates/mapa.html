@@ -5,60 +5,77 @@
     <title>Mapa de Sensores - RC Engenharia</title>
     <style>
         body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; }
-        .header { background: #fff; padding: 1em 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 1em; z-index: 10; position: relative; }
+        .header { background: #fff; padding: 1em 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 1em; }
         .logo-header { height: 40px; }
         h1 { color: #0056b3; margin: 0; font-size: 1.5em; }
         
-        /* --- MUDANÇAS IMPORTANTES NO CSS PARA O MAPA --- */
+        /* --- CSS ATUALIZADO PARA O MAPA E O PINO --- */
         .map-container {
-            position: absolute; /* Ocupa a tela toda */
-            top: 0;
+            position: absolute;
+            top: 65px; /* Altura do cabeçalho */
             left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* Esconde as barras de rolagem */
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
         }
         .map-iframe {
             width: 100%;
             height: 100%;
-            border: none; /* Remove a borda padrão do iframe */
+            border: none;
         }
-        .content-overlay {
-            /* Este container centraliza o card de informações sobre o mapa */
+        
+        /* Estilo do pino do sensor */
+        .sensor-marker {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            /* Posicione o pino no mapa. Ajuste top/left para mover. */
+            top: 55%; 
+            left: 48%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            pointer-events: none; /* Permite clicar "através" dele para interagir com o mapa */
-        }
-        .sensor-info {
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 8px;
-            padding: 1.5em;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-            width: 90%;
-            max-width: 380px;
-            text-align: center;
-            pointer-events: auto; /* Reativa os cliques apenas para este card */
-        }
-        .sensor-info h2 { margin-top: 0; color: #333; }
-        .sensor-info p { margin: 0.5em 0; }
-        .btn-acessar {
-            display: inline-block;
-            margin-top: 1em;
-            padding: 0.8em 1.5em;
-            background-color: #28a745;
-            color: white;
+            cursor: pointer;
             text-decoration: none;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: background-color: 0.3s;
         }
-        .btn-acessar:hover { background-color: #218838; }
+
+        /* A bolinha vermelha que pulsa */
+        .sensor-marker .dot {
+            width: 20px;
+            height: 20px;
+            background-color: #dc3545;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            animation: pulse 1.5s infinite;
+        }
+        
+        /* O texto abaixo da bolinha */
+        .sensor-marker .label {
+            margin-top: 8px;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 5px;
+            font-size: 14px;
+            white-space: nowrap; /* Impede que o texto quebre a linha */
+        }
+
+        /* Animação de pulso para chamar atenção */
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+            }
+        }
     </style>
 </head>
 <body>
@@ -69,23 +86,17 @@
 
     <div class="map-container">
         <iframe 
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d58633.2010263158!2d-45.67107874863281!3d-23.4115431!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94cd7a642e038521%3A0x6a5d3a4b0d0d8b4!2sRodovia%20dos%20Tamoios!5e0!3m2!1spt-BR!2sbr!4v1695498155555!5m2!1spt-BR!2sbr" 
+            src="http://googleusercontent.com/maps.google.com/4" 
             class="map-iframe" 
             allowfullscreen="" 
             loading="lazy" 
             referrerpolicy="no-referrer-when-downgrade">
         </iframe>
-    </div>
 
-    <div class="content-overlay">
-        <div class="sensor-info">
-            <h2>Sensor de Encosta</h2>
-            <p><strong>ID do Dispositivo:</strong> {{ device_id }}</p>
-            <p><strong>Localização:</strong> Rodovia dos Tamoios (Serra do Mar)</p>
-            <p><strong>Status:</strong> <span style="color: green;">●</span> Online</p>
-            
-            <a href="/dashboard?device_id={{ device_id }}" class="btn-acessar">Ver Dados do Sensor</a>
-        </div>
+        <a href="/dashboard?device_id={{ device_id }}" class="sensor-marker">
+            <div class="dot"></div>
+            <div class="label">Sensor: {{ device_id }}</div>
+        </a>
     </div>
 </body>
 </html>
