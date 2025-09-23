@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa de Sensores - RC Engenharia</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; }
+        .header { background: #fff; padding: 1em 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 1em; }
+        .logo-header { height: 40px; }
+        h1 { color: #0056b3; margin: 0; font-size: 1.5em; }
+        .map-container {
+            position: relative;
+            text-align: center;
+            padding: 2em;
+        }
+        .map-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .sensor-info {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 1.5em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 350px;
+        }
+        .sensor-info h2 { margin-top: 0; color: #333; }
+        .sensor-info p { margin: 0.5em 0; }
+        .btn-acessar {
+            display: inline-block;
+            margin-top: 1em;
+            padding: 0.8em 1.5em;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn-acessar:hover { background-color: #218838; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo da Empresa" class="logo-header">
+        <h1>Localização de Sensores</h1>
+    </div>
+
+    <div class="map-container">
+        <img src="https://i.imgur.com/5a1gY5a.jpeg" alt="Mapa da Rodovia dos Tamoios na Serra do Mar" class="map-image">
+
+        <div class="sensor-info">
+            <h2>Sensor de Encosta</h2>
+            <p><strong>ID do Dispositivo:</strong> {{ device_id }}</p>
+            <p><strong>Localização:</strong> Rodovia dos Tamoios (Serra do Mar)</p>
+            <p><strong>Status:</strong> <span style="color: green;">●</span> Online</p>
+            
+            <a href="/dashboard?device_id={{ device_id }}" class="btn-acessar">Ver Dados do Sensor</a>
+        </div>
+    </div>
+</body>
+</html>
