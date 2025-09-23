@@ -6,7 +6,11 @@
     <style>
         body { font-family: sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .container { background: #fff; padding: 2em; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
-        .logo { max-width: 100px; margin-bottom: 1em; }
+        .logo {
+            /* ALTERAÇÃO 1: Aumentado de 100px para 150px para dar mais destaque */
+            max-width: 150px;
+            margin-bottom: 1em;
+        }
         h1 { color: #0056b3; }
         form { display: flex; flex-direction: column; text-align: left; }
         label { margin-bottom: 0.5em; font-weight: bold; }
@@ -18,7 +22,8 @@
     <div class="container">
         <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo da Empresa" class="logo">
 
-        <h1>Simulador de Acesso à API Zentra Cloud</h1>
+        <h1>Simulador Zentra Cloud</h1>
+        
         <form action="/dashboard" method="post">
             <label for="username">E-mail de Acesso:</label>
             <input type="email" id="username" name="username" value="usuario@exemplo.com" required>
@@ -31,6 +36,7 @@
     </div>
 </body>
 </html>
+
 
 
 
