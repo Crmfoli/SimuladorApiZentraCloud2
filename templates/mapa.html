@@ -1,88 +1,139 @@
-<script>
-    // Centraliza o mapa na Tamoios (entre km 67 e km 82)
-    var map = L.map('map').setView([-23.52, -45.58], 13);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
-    }).addTo(map);
-
-    // Sensores posicionados nos kms solicitados
-    const sensores = [
-        {
-            id: 'SN-KM67',
-            nome: 'Sensor KM 67',
-            coords: [-23.5408, -45.5625]
-        },
-        {
-            id: 'SN-KM72',
-            nome: 'Sensor KM 72',
-            coords: [-23.5255, -45.5722]
-        },
-        {
-            id: 'SN-KM74',
-            nome: 'Sensor KM 74',
-            coords: [-23.5197, -45.5783]
-        },
-        {
-            id: 'SN-KM82',
-            nome: 'Sensor KM 82',
-            coords: [-23.4955, -45.6009]
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa de Sensores - RC Engenharia</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body { font-family: sans-serif; background-color: #f0f2p5; margin: 0; }
+        .header { background: #fff; padding: 1em 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 1em; }
+        .logo-header { height: 40px; }
+        h1 { color: #0056b3; margin: 0; font-size: 1.5em; }
+        #map { height: calc(100vh - 80px); width: 100%; }
+        .leaflet-popup-content-wrapper { border-radius: 8px; }
+        .leaflet-popup-content { text-align: center; }
+        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s; }
+        .btn-acessar:hover { background-color: #218838; }
+        #logo-tamoios-mapa {
+            position: absolute; top: 85px; left: 15px; z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.9); padding: 10px;
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            max-width: 200px; height: auto;
         }
-    ];
-
-    // Cria os marcadores no mapa
-    sensores.forEach(sensor => {
-        var marker = L.marker(sensor.coords).addTo(map);
-        var popupContent = `<div style="text-align: center;">
-                                <h4>${sensor.nome}</h4>
-                                <p style="margin: 5px 0;">ID: ${sensor.id}</p>
-                                <a href="/dashboard?device_id=${sensor.id}" class="btn-acessar">Ver Dados</a>
-                            </div>`;
-        marker.bindPopup(popupContent);
-    });
-
-    // Preenche a legenda
-    const listaLegenda = document.getElementById('lista-sensores-legenda');
-    sensores.forEach(sensor => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span>${sensor.nome}</span>
-                        <span id="status-${sensor.id}">
-                            <span class="status-dot"></span>Carregando...
-                        </span>`;
-        listaLegenda.appendChild(li);
-    });
-
-    // Função de risco (mantida)
-    function analisarRisco(dados) {
-        const umidade = dados.umidade;
-        const chuva = dados.chuva;
-        if (umidade > 48 && chuva > 3.0) return { nivel: "Iminente", classe: "status-iminente" };
-        if (umidade > 50) return { nivel: "Alerta", classe: "status-alerta" };
-        if (chuva > 5.0) return { nivel: "Alerta", classe: "status-alerta" };
-        if (chuva > 0.5) return { nivel: "Atenção", classe: "status-atencao" };
-        return { nivel: "Mínimo", classe: "status-minimo" };
-    }
-
-    async function atualizarLegendaStatus() {
-        try {
-            const response = await fetch('/api/status_sensores');
-            const statusAtual = await response.json();
-            const risco = analisarRisco(statusAtual);
-            sensores.forEach(sensor => {
-                const statusEl = document.getElementById(`status-${sensor.id}`);
-                statusEl.innerHTML = `<span class="status-dot ${risco.classe}"></span>${risco.nivel}`;
-            });
-        } catch (error) {
-            console.error("Erro ao atualizar status da legenda:", error);
+        #logo-tamoios-mapa img { max-width: 100%; height: auto; display: block; }
+        #legenda-mapa {
+            position: absolute; top: 85px; right: 15px; z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.9); padding: 15px;
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            width: 300px;
         }
-    }
+        #legenda-mapa h3 { margin: 0 0 10px 0; font-size: 1.1em; text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 8px; }
+        #legenda-mapa ul { list-style: none; margin: 0; padding: 0; }
+        #legenda-mapa li { display: flex; justify-content: space-between; align-items: center; font-size: 1em; padding: 8px 0; }
+        .status-dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; margin-right: 10px; }
+        .status-minimo { background-color: #28a745; }
+        .status-atencao { background-color: #ffc107; }
+        .status-alerta { background-color: #fd7e14; }
+        .status-iminente { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo da Empresa" class="logo-header">
+        <h1>Localização de Sensores</h1>
+    </div>
 
-    document.addEventListener('DOMContentLoaded', () => {
-        atualizarLegendaStatus();
-        setInterval(atualizarLegendaStatus, 5000);
-    });
-</script>
+    <div id="map">
+        <div id="logo-tamoios-mapa">
+            <img src="{{ url_for('static', filename='images/tamoios.png') }}" alt="Logo Tamoios">
+        </div>
+        <div id="legenda-mapa">
+            <h3>Status dos Sensores</h3>
+            <ul id="lista-sensores-legenda"></ul>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // CENTRALIZAÇÃO ORIGINAL mantida
+        var map = L.map('map').setView([-23.525, -45.57], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
+        }).addTo(map);
+
+        // Apenas as coordenadas foram alteradas para os kms solicitados
+        const sensores = [
+            {
+                id: 'SN-A7B4',
+                nome: 'Sensor KM 81 (Planalto)',
+                coords: [-23.4955, -45.6009] // agora posicionado aproximado em KM 82
+            },
+            // ==========================================================
+            // Coordenadas atualizadas para corresponder ao KM 74
+            {
+                id: 'SN-C3D9',
+                nome: 'Sensor KM 74 (Trecho de Serra)',
+                coords: [-23.5197, -45.5783] // KM 74
+            },
+            // ==========================================================
+            {
+                id: 'SN-F8G2',
+                nome: 'Sensor KM 68 (Trecho de Serra)',
+                coords: [-23.5408, -45.5625] // agora posicionado aproximado em KM 67
+            },
+            {
+                id: 'SN-K1L5',
+                nome: 'Sensor KM 62 (Próximo ao Litoral)',
+                coords: [-23.5255, -45.5722] // agora posicionado aproximado em KM 72
+            }
+        ];
+
+        // O restante do script continua o mesmo
+        sensores.forEach(sensor => {
+            var marker = L.marker(sensor.coords).addTo(map);
+            var popupContent = `<div style="text-align: center;"><h4>${sensor.nome}</h4><p style="margin: 5px 0;">ID: ${sensor.id}</p><a href="/dashboard?device_id=${sensor.id}" class="btn-acessar">Ver Dados</a></div>`;
+            marker.bindPopup(popupContent);
+        });
+
+        const listaLegenda = document.getElementById('lista-sensores-legenda');
+        function analisarRisco(dados) {
+            const umidade = dados.umidade;
+            const chuva = dados.chuva;
+            if (umidade > 48 && chuva > 3.0) return { nivel: "Iminente", classe: "status-iminente" };
+            if (umidade > 50) return { nivel: "Alerta", classe: "status-alerta" };
+            if (chuva > 5.0) return { nivel: "Alerta", classe: "status-alerta" };
+            if (chuva > 0.5) return { nivel: "Atenção", classe: "status-atencao" };
+            return { nivel: "Mínimo", classe: "status-minimo" };
+        }
+        
+        sensores.forEach(sensor => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span>${sensor.nome}</span><span id="status-${sensor.id}"><span class="status-dot"></span>Carregando...</span>`;
+            listaLegenda.appendChild(li);
+        });
+
+        async function atualizarLegendaStatus() {
+            try {
+                const response = await fetch('/api/status_sensores');
+                const statusAtual = await response.json();
+                const risco = analisarRisco(statusAtual);
+                sensores.forEach(sensor => {
+                    const statusEl = document.getElementById(`status-${sensor.id}`);
+                    statusEl.innerHTML = `<span class="status-dot ${risco.classe}"></span>${risco.nivel}`;
+                });
+            } catch (error) { console.error("Erro ao atualizar status da legenda:", error); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            atualizarLegendaStatus();
+            setInterval(atualizarLegendaStatus, 5000);
+        });
+    </script>
+</body>
+</html>
+
 
 
 
