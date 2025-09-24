@@ -5,14 +5,14 @@
     <title>Mapa de Sensores - RC Engenharia</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
-        body { font-family: sans-serif; background-color: #f0f2p5; margin: 0; }
+        body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; }
         .header { background: #fff; padding: 1em 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 1em; }
         .logo-header { height: 40px; }
         h1 { color: #0056b3; margin: 0; font-size: 1.5em; }
         #map { height: calc(100vh - 80px); width: 100%; }
         .leaflet-popup-content-wrapper { border-radius: 8px; }
         .leaflet-popup-content { text-align: center; }
-        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color 0.3s; }
+        .btn-acessar { display: inline-block; padding: 0.8em 1.5em; background-color: #28a745; color: black !important; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background-color: 0.3s; }
         .btn-acessar:hover { background-color: #218838; }
         #logo-tamoios-mapa {
             position: absolute; top: 85px; left: 15px; z-index: 1000;
@@ -55,42 +55,41 @@
 
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // CENTRALIZAÇÃO ORIGINAL mantida
-        var map = L.map('map').setView([-23.525, -45.57], 15);
+        // Novo centro e zoom para enquadrar as suas novas coordenadas
+        var map = L.map('map').setView([-23.325, -45.647], 12);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Apenas as coordenadas foram alteradas para os kms solicitados
+        // =======================================================================
+        // ALTERAÇÃO: A lista de sensores foi substituída pela que você forneceu.
+        // =======================================================================
         const sensores = [
             {
-                id: 'SN-A7B4',
-                nome: 'Sensor KM 81 (Planalto)',
-                coords: [-23.4955, -45.6009] // agora posicionado aproximado em KM 82
-            },
-            // ==========================================================
-            // Coordenadas atualizadas para corresponder ao KM 74
-            {
-                id: 'SN-C3D9',
-                nome: 'Sensor KM 74 (Trecho de Serra)',
-                coords: [-23.5197, -45.5783] // KM 74
-            },
-            // ==========================================================
-            {
-                id: 'SN-F8G2',
-                nome: 'Sensor KM 68 (Trecho de Serra)',
-                coords: [-23.5408, -45.5625] // agora posicionado aproximado em KM 67
+                id: 'SN-KM67',
+                nome: 'Sensor KM 67',
+                coords: [-23.2847, -45.6633]
             },
             {
-                id: 'SN-K1L5',
-                nome: 'Sensor KM 62 (Próximo ao Litoral)',
-                coords: [-23.5255, -45.5722] // agora posicionado aproximado em KM 72
+                id: 'SN-KM72',
+                nome: 'Sensor KM 72',
+                coords: [-23.3159, -45.6518]
+            },
+            {
+                id: 'SN-KM74',
+                nome: 'Sensor KM 74',
+                coords: [-23.3279, -45.6465]
+            },
+            {
+                id: 'SN-KM82',
+                nome: 'Sensor KM 82',
+                coords: [-23.3715, -45.6282]
             }
         ];
 
-        // O restante do script continua o mesmo
+        // O restante do script continua o mesmo, ele se adapta aos novos dados
         sensores.forEach(sensor => {
             var marker = L.marker(sensor.coords).addTo(map);
             var popupContent = `<div style="text-align: center;"><h4>${sensor.nome}</h4><p style="margin: 5px 0;">ID: ${sensor.id}</p><a href="/dashboard?device_id=${sensor.id}" class="btn-acessar">Ver Dados</a></div>`;
@@ -133,10 +132,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
